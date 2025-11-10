@@ -1,0 +1,1 @@
+g++ -I../include main.cpp io_glfw.cpp glad.c -o main -lglfw -lGL && ./main
