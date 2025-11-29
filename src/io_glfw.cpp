@@ -4,7 +4,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <iostream> // rip this out later
 #include <stdexcept>
 
 GLFWwindow* getWindow(int width, int height, const char* title) {
