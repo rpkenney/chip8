@@ -5,25 +5,23 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <ctime>
+#include <cstring>
 
 Chip8CPU::Chip8CPU(Chip8Memory &mem, Chip8IO& io)
     : memory(mem), io(io), stack{}, reg{} {
     std::srand(std::time(nullptr));
     sp = 0;
-    
+    pc = Chip8Memory::MEMORY_SIZE;    
 }
 
+void Chip8CPU::timerTick() {
+    if (dt > 0) dt--;
+    if (st > 0) st--;
+}
 
-void Chip8CPU::cycle() {
-    uint16_t opcode = memory.readWord(pc)
-
+void Chip8CPU::executeInstruction() {
+    uint16_t opcode = memory.readWord(pc);
     pc += 2;
-
-    executeOpcode(opcode);
-}
-
-
-void Chip8CPU::executeOpcode(uint16_t opcode) {
     uint8_t n = (opcode & 0x000F);
     uint8_t nn = (opcode & 0x00FF);
     uint16_t nnn = (opcode & 0x0FFF);
@@ -39,7 +37,7 @@ void Chip8CPU::executeOpcode(uint16_t opcode) {
                     pc = stack[--sp];
                     break;
                 case 0x00E0:
-                    io.clearScreen();
+                    io.clearDisplay();
                     break;
                 default:
                     throw std::runtime_error("invalid opcode");                    
@@ -74,7 +72,7 @@ void Chip8CPU::executeOpcode(uint16_t opcode) {
             reg[x] += nn;
             break;
         case 0x8000:
-       	    switch (opcode 0x000F) {
+       	    switch (opcode & 0x000F) {
                 case 0x0001:
                     reg[x] = reg[x] | reg[y];
                     break;
@@ -88,17 +86,17 @@ void Chip8CPU::executeOpcode(uint16_t opcode) {
                     uint16_t sum;
                     sum = reg[x] + reg[y];
                     if (sum > 0xFF){
-                        v[15] = 0x01;
+                        reg[15] = 0x01;
                     } else {
-                        v[15] = 0x00;
+                        reg[15] = 0x00;
                     }
                     reg[x] = static_cast<uint8_t>(sum);
                     break;
                 case 0x0005:
                     if (reg[y] > reg[x]) {
-                        v[15] = 0x00;
+                        reg[15] = 0x00;
                     } else {
-                        v[15] = 0x01;
+                        reg[15] = 0x01;
                     }
                     reg[x] -= reg[y];
                     break;
@@ -108,9 +106,9 @@ void Chip8CPU::executeOpcode(uint16_t opcode) {
                     break;
                 case 0x0007:
                     if(reg[x] > reg[y]) {
-                        v[15] = 0x00;
+                        reg[15] = 0x00;
                     } else {
-                        v[15] = 0x01;
+                        reg[15] = 0x01;
                     }
                     reg[x] = reg[y] - reg[x];
                     break;
@@ -142,12 +140,12 @@ void Chip8CPU::executeOpcode(uint16_t opcode) {
         case 0xE000:
             switch ( opcode & 0x00F0 ) {
                 case 0x0090:
-                   if ( io.keyPressed(reg[x]) ) {
+                   if ( io.isKeyPressed(reg[x]) ) {
                         pc += 2;
                    } 
                    break;
                 case 0x00A0:
-                    if ( !io.keyPressed(reg[x]) ) {
+                    if ( !io.isKeyPressed(reg[x]) ) {
                         pc += 2;
                     }
                     break;

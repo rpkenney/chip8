@@ -9,8 +9,8 @@ class Chip8IO;
 class Chip8CPU {
 public:
     Chip8CPU(Chip8Memory& mem, Chip8IO& io);
-
-    void cycle();
+    
+    void executeInstruction();
     void timerTick();
 
 private:
@@ -31,6 +31,5 @@ private:
     uint8_t dt;
     uint8_t st;
 
-    void executeOpcode(uint16_t opcode);
 };
 #endif

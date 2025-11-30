@@ -3,18 +3,34 @@
 #include "cpu.h"
 
 #include <iostream>
+#include <chrono>
 
 int main() {
     Chip8IO_GLFW io(640, 320, "CHIP-8");
     Chip8Memory memory;    
-    //Chip8CPU cpu;
+    Chip8CPU cpu(memory, io);
+
+    memory.loadRom("../roms/test");
 
     io.clearDisplay();
     
+    auto last_frame  = std::chrono::high_resolution_clock::now();    
+    auto last_instruction = last_frame;
+    auto curr_time = last_frame;
     while(!io.shouldClose()) {
-       // cpu.cycle();
+        curr_time = std::chrono::high_resolution_clock::now();
+        if ( curr_time - last_frame > std::chrono::milliseconds(16)) {
+            cpu.timerTick();
+            io.render();
+            last_frame = curr_time;
+        }
+
+        if (curr_time - last_instruction >= std::chrono::milliseconds(2) )  {
+            cpu.executeInstruction();
+            last_instruction =  curr_time;
+        }
+    
         io.pollEvents();
-        io.render();
     }
 
     return 0;

@@ -3,3 +3,5 @@ include/glad
 
 src/glad.c
 
+roms/*
+!roms/.*

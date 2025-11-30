@@ -3,12 +3,15 @@
 
 #include <cstdint>
 #include <array>
+#include <string>
 
 class Chip8Memory {
     public:
         Chip8Memory();
         ~Chip8Memory() = default;
         
+        void loadRom(const std::string &path); 
+
         void setByte(uint16_t addr, uint8_t value);
         uint8_t readByte(uint16_t addr);
 
@@ -16,8 +19,9 @@ class Chip8Memory {
         
         uint8_t* raw();        
 
-    private:
         static constexpr uint16_t MEMORY_SIZE = 4096;
+
+    private:
         static constexpr uint16_t PROGRAM_START = 0x200;
 
         std::array<uint8_t, MEMORY_SIZE> ram{};
