@@ -116,8 +116,9 @@ Chip8IO_GLFW::Chip8IO_GLFW(int width, int height, const char* title) {
 
 
     frameBuffer.resize(64 * 32, 0);
-
-    setPixel(1, 2, true);
+    
+    uint8_t sprite[] = { 0xAA, 0x80 };
+    drawSprite(2, 2, sprite, 2);
 }
 
 Chip8IO_GLFW::~Chip8IO_GLFW() {
@@ -140,9 +141,24 @@ void Chip8IO_GLFW::setPixel(int x, int y, bool active){
     }
 }
 
+bool Chip8IO_GLFW::getPixel(int x, int y) {
+    return frameBuffer[y * 64 + x];
+}
 
-void Chip8IO_GLFW::drawSprite(int x, int y, uint8_t* sprite, int height) {
-    
+
+bool Chip8IO_GLFW::drawSprite(int x, int y, uint8_t* sprite, int height) {
+    bool collision = false;
+    for(int i = 0; i < height; i++) {
+        uint8_t row = sprite[i];
+        for(int j = 0; j < 8; j++) {
+            uint8_t curr = row & 0x80;
+            row = row << 1;
+            bool active = getPixel(x + j, y + i);
+            collision = collision || (active && curr);
+            setPixel(x + j, y + i, active ^ curr);
+        }
+    } 
+    return collision;
 }
 
 void Chip8IO_GLFW::render() {

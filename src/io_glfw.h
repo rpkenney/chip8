@@ -14,7 +14,7 @@ public:
     ~Chip8IO_GLFW() override;
     
     void clearDisplay() override;
-    void drawSprite(int x, int y, uint8_t* sprite, int height) override;
+    bool drawSprite(int x, int y, uint8_t* sprite, int height) override;
     void render() override;
     void pollEvents() override;
 
@@ -30,6 +30,7 @@ private:
 
     void initVertices(int width, int height);
     void setPixel(int x, int y, bool active);
+    bool getPixel(int x, int y);
 
     std::vector<uint8_t> frameBuffer;
 };

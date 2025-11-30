@@ -3,10 +3,12 @@
 #include "io_glfw.h"
 
 #include <stdexcept>
+#include <cstdlib>
+#include <ctime>
 
 Chip8CPU::Chip8CPU(Chip8Memory &mem, Chip8IO& io)
     : memory(mem), io(io), stack{}, reg{} {
-    
+    std::srand(std::time(nullptr));
     sp = 0;
     
 }
@@ -22,7 +24,8 @@ void Chip8CPU::cycle() {
 
 
 void Chip8CPU::executeOpcode(uint16_t opcode) {
-    uint16_t nn = (opcode & 0x00FF);
+    uint8_t n = (opcode & 0x000F);
+    uint8_t nn = (opcode & 0x00FF);
     uint16_t nnn = (opcode & 0x0FFF);
 
 
@@ -71,7 +74,7 @@ void Chip8CPU::executeOpcode(uint16_t opcode) {
             reg[x] += nn;
             break;
         case 0x8000:
-            switch (opcode 0x000F) {
+       	    switch (opcode 0x000F) {
                 case 0x0001:
                     reg[x] = reg[x] | reg[y];
                     break;
@@ -119,5 +122,68 @@ void Chip8CPU::executeOpcode(uint16_t opcode) {
                     throw std::runtime_error("invalid opcode");                    
             }             
             break;
+        case 0x9000:
+            if (reg[x] != reg[y]) {
+                pc += 2;
+            }
+            break;
+        case 0xA000:
+            I = memory.readWord(nnn);
+            break;
+        case 0xB000:
+            pc = memory.readWord(nnn + static_cast<uint16_t>(reg[0]));
+            break;
+        case 0xC000:
+            reg[x] = (std::rand() % 256) & nn;
+            break;
+        case 0xD000:
+            io.drawSprite(x, y, memory.raw() + I, n);
+            break;
+        case 0xE000:
+            switch ( opcode & 0x00F0 ) {
+                case 0x0090:
+                   if ( io.keyPressed(reg[x]) ) {
+                        pc += 2;
+                   } 
+                   break;
+                case 0x00A0:
+                    if ( !io.keyPressed(reg[x]) ) {
+                        pc += 2;
+                    }
+                    break;
+                default:
+                    throw std::runtime_error("invalid opcode");                    
+            }
+            break;
+        case 0xF000:
+            switch (opcode & 0x00FF) {
+                case 0x0015:
+                    dt = reg[x];
+                    break;
+                case 0x0018:
+                    st = reg[x];
+                    break;
+                case 0x001E:
+                    I += reg[x];
+                    break;
+                case 0x0029:
+                    I = reg[x] * 5;
+                    break;
+                case 0x0033:
+                    memory.setByte(I, reg[x] / 100);
+                    memory.setByte(I + 1, (reg[x] % 100) / 10);
+                    memory.setByte(I + 2, (reg[x] % 100) % 10);
+                    break;
+                case 0x0055:
+                    memcpy(memory.raw() + I, reg, x + 1);
+                    break;
+                case 0x0065:
+                    memcpy(reg, memory.raw() + I, x + 1);
+                    break;
+                default:
+                    throw std::runtime_error("invalid opcode");                    
+            }
+            break; 
+            
     }
 }

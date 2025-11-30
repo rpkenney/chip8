@@ -11,6 +11,7 @@ public:
     Chip8CPU(Chip8Memory& mem, Chip8IO& io);
 
     void cycle();
+    void timerTick();
 
 private:
     Chip8Memory& memory;
@@ -24,6 +25,12 @@ private:
 
     uint8_t reg[16];
 
+
+    uint16_t I;
+
+    uint8_t dt;
+    uint8_t st;
+
     void executeOpcode(uint16_t opcode);
-}
+};
 #endif
