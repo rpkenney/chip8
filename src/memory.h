@@ -19,10 +19,10 @@ class Chip8Memory {
         
         uint8_t* raw();        
 
-        static constexpr uint16_t MEMORY_SIZE = 4096;
+        static constexpr uint16_t PROGRAM_START = 0x200;
 
     private:
-        static constexpr uint16_t PROGRAM_START = 0x200;
+        static constexpr uint16_t MEMORY_SIZE = 4096;
 
         std::array<uint8_t, MEMORY_SIZE> ram{};
 };

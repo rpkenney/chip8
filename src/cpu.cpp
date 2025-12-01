@@ -6,17 +6,28 @@
 #include <cstdlib>
 #include <ctime>
 #include <cstring>
+#include <iostream>
+#include <iomanip>
+#include <cstdio>
 
 Chip8CPU::Chip8CPU(Chip8Memory &mem, Chip8IO& io)
     : memory(mem), io(io), stack{}, reg{} {
     std::srand(std::time(nullptr));
     sp = 0;
-    pc = Chip8Memory::MEMORY_SIZE;    
+    pc = Chip8Memory::PROGRAM_START;    
+    I = 0;
+    dt = 0;
+    st = 0;
 }
 
 void Chip8CPU::timerTick() {
     if (dt > 0) dt--;
     if (st > 0) st--;
+}
+
+static void handleInvalidOpcode(uint16_t opcode) {
+    std::cout << "invalid opcode: 0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(4) << opcode << std::endl;
+    throw std::runtime_error("invalid opcode");
 }
 
 void Chip8CPU::executeInstruction() {
@@ -29,7 +40,7 @@ void Chip8CPU::executeInstruction() {
 
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
-
+    std::cout << "opcode: 0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(4) << opcode << std::endl;
     switch (opcode & 0xF000) {
         case 0x0000:
             switch (opcode)  {
@@ -40,7 +51,7 @@ void Chip8CPU::executeInstruction() {
                     io.clearDisplay();
                     break;
                 default:
-                    throw std::runtime_error("invalid opcode");                    
+                    handleInvalidOpcode(opcode);
             }
             break;
         case 0x1000:
@@ -117,7 +128,7 @@ void Chip8CPU::executeInstruction() {
                     reg[15] = reg[y] & 0x80 >> 7;
                     break;
                 default:
-                    throw std::runtime_error("invalid opcode");                    
+                    handleInvalidOpcode(opcode);
             }             
             break;
         case 0x9000:
@@ -150,7 +161,7 @@ void Chip8CPU::executeInstruction() {
                     }
                     break;
                 default:
-                    throw std::runtime_error("invalid opcode");                    
+                    handleInvalidOpcode(opcode);
             }
             break;
         case 0xF000:
@@ -179,7 +190,7 @@ void Chip8CPU::executeInstruction() {
                     memcpy(reg, memory.raw() + I, x + 1);
                     break;
                 default:
-                    throw std::runtime_error("invalid opcode");                    
+                    handleInvalidOpcode(opcode);
             }
             break; 
             

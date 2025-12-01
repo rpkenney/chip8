@@ -118,7 +118,6 @@ Chip8IO_GLFW::Chip8IO_GLFW(int width, int height, const char* title) {
     frameBuffer.resize(64 * 32, 0);
     
     uint8_t sprite[] = { 0xAA, 0x80 };
-    drawSprite(2, 2, sprite, 2);
 }
 
 Chip8IO_GLFW::~Chip8IO_GLFW() {

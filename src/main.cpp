@@ -10,7 +10,7 @@ int main() {
     Chip8Memory memory;    
     Chip8CPU cpu(memory, io);
 
-    memory.loadRom("../roms/test");
+    memory.loadRom("../roms/test2");
 
     io.clearDisplay();
     

@@ -1,6 +1,8 @@
 #include "memory.h"
 
 #include <fstream>
+#include <iostream>
+#include <iomanip>
 
 Chip8Memory::Chip8Memory(){}
 
@@ -43,4 +45,5 @@ void Chip8Memory::loadRom(const std::string &path) {
     if (!file) {
         throw std::runtime_error("ROM read failure");
     }
+
 }
