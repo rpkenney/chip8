@@ -40,7 +40,8 @@ void Chip8CPU::executeInstruction() {
 
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
-    std::cout << "opcode: 0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(4) << opcode << std::endl;
+    
+    //std::cout << "opcode: 0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(4) << opcode << std::endl;
     switch (opcode & 0xF000) {
         case 0x0000:
             switch (opcode)  {
@@ -137,7 +138,7 @@ void Chip8CPU::executeInstruction() {
             }
             break;
         case 0xA000:
-            I = memory.readWord(nnn);
+            I = nnn;
             break;
         case 0xB000:
             pc = memory.readWord(nnn + static_cast<uint16_t>(reg[0]));
@@ -146,7 +147,8 @@ void Chip8CPU::executeInstruction() {
             reg[x] = (std::rand() % 256) & nn;
             break;
         case 0xD000:
-            io.drawSprite(x, y, memory.raw() + I, n);
+            
+            io.drawSprite(reg[x], reg[y], memory.raw() + I, n);
             break;
         case 0xE000:
             switch ( opcode & 0x00F0 ) {

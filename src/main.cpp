@@ -31,6 +31,7 @@ int main() {
         }
     
         io.pollEvents();
+        //std::cin.get();
     }
 
     return 0;
