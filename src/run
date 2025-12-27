@@ -1,2 +1,2 @@
-g++ -I../include main.cpp memory.cpp io_glfw.cpp glad.c cpu.cpp -o main -lglfw -lGL -g -O0 -fno-omit-frame-pointer && ./main
+g++ -I../include main.cpp memory.cpp io_glfw.cpp glad.c cpu.cpp -o main -lglfw -lGL -g -O0 -fno-omit-frame-pointer && ./main "$1"
 

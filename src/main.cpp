@@ -5,12 +5,11 @@
 #include <iostream>
 #include <chrono>
 
-int main() {
+int main(int argc, char *argv[]) {
     Chip8IO_GLFW io(640, 320, "CHIP-8");
     Chip8Memory memory;    
     Chip8CPU cpu(memory, io);
-
-    memory.loadRom("../roms/test2");
+    memory.loadRom(argv[1]);
 
     io.clearDisplay();
     
