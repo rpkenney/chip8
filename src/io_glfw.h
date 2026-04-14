@@ -23,12 +23,10 @@ public:
 
 private:
     GLFWwindow* window;
-    unsigned int VAO, VBO, EBO, shaderProgram;
+    unsigned int VAO, VBO, shaderProgram;
+    unsigned int screenTexture{};
+    int uScreenTexture{-1};
 
-    std::vector<float> vertices;
-    std::vector<unsigned int> indices;
-
-    void initVertices(int width, int height);
     void setPixel(int x, int y, bool active);
     bool getPixel(int x, int y);
 
