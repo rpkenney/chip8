@@ -1,6 +1,6 @@
 #include "cpu.h"
 #include "memory.h"
-#include "io_glfw.h"
+#include "io.h"
 
 #include <stdexcept>
 #include <cstdlib>
@@ -41,7 +41,6 @@ void Chip8CPU::executeInstruction() {
     uint8_t x = (opcode & 0x0F00) >> 8;
     uint8_t y = (opcode & 0x00F0) >> 4;
     
-    //std::cout << "opcode: 0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(4) << opcode << std::endl;
     switch (opcode & 0xF000) {
         case 0x0000:
             switch (opcode)  {

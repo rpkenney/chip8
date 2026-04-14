@@ -2,7 +2,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <iomanip>
 
 Chip8Memory::Chip8Memory(){}
 
