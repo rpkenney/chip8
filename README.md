@@ -14,17 +14,39 @@
 
 If `src/glad.c` or `include/glad/` is missing after clone, regenerate GLAD (3.3 Core), put `glad.c` in `src/`, and put the `glad` and `KHR` trees under `include/`. **`KHR`** is Khronos-supplied glue (e.g. `khrplatform.h`) that GLAD’s headers include.
 
+**Install toolchain and libs (Debian / Ubuntu example):**
+
+```bash
+sudo apt install build-essential cmake libglfw3-dev libgl1-mesa-dev
+```
+
+Adjust package names if you use another distro.
+
 **Configure and build:**
+
+From the repository root:
 
 ```bash
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-`-S .` is the source directory (project root). `-B build` is the build directory (CMake writes build files there). `-DCMAKE_BUILD_TYPE=Release` sets the cache variable for an optimized, non-debug build (typical for Makefile/Ninja generators). `cmake --build build` compiles using whatever generator was configured for that directory.
+- `-S .` — project root (where `CMakeLists.txt` lives).
+- `-B build` — out-of-tree build directory.
+- `-DCMAKE_BUILD_TYPE=Release` — optimized build (for single-config generators like Make/Ninja). For a debug build, use `Debug` instead.
 
-Binary: `build/chip8`. Run with the ROM path as the first argument; close the window to quit.
+Reconfigure after changing `CMakeLists.txt` by running the first `cmake` line again (or delete `build/` and start over).
+
+**Run:**
+
+Binary: `build/chip8`. Pass the ROM path (and optional flags such as `--trace`, `--step`, `-b breakpoints.txt`). Close the window to quit.
 
 ```bash
-./build/chip8 <rom>
+./build/chip8 roms/test3
+```
+
+Quick smoke test (process should stay up; exit code 124 means `timeout` stopped it after 3 seconds):
+
+```bash
+timeout 3 ./build/chip8 roms/test3
 ```

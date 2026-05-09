@@ -14,6 +14,8 @@ public:
 
     void setTrace(Chip8DebugSink* sink, TraceLevel level);
 
+    std::uint16_t getPC() const { return pc; }
+
     void executeInstruction();
     void timerTick();
 

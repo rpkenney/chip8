@@ -2,6 +2,7 @@
 #define CHIP8_DEBUG_H
 
 #include <cstdint>
+#include <cstdio>
 
 enum class TraceLevel : std::uint8_t {
     Off = 0,
@@ -30,11 +31,17 @@ public:
     virtual ~Chip8DebugSink() = default;
 
     virtual void onInstructionExecuted(std::uint16_t insn_pc, std::uint16_t opcode) = 0;
+    virtual void onBreakpointHit(std::uint16_t pc) {}
 };
 
 class PrintingDebugSink final : public Chip8DebugSink {
 public:
     void onInstructionExecuted(std::uint16_t insn_pc, std::uint16_t opcode) override;
+    void onBreakpointHit(std::uint16_t pc) override {
+        std::fprintf(stderr,
+                     "BREAK PC=0x%04X (Space=step, Enter=resume run)\n",
+                     pc);
+    }
 };
 
 #endif

@@ -1,0 +1,2 @@
+# Standard CHIP-8 load address — stops before the first ROM instruction.
+0x200

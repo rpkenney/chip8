@@ -14,19 +14,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Main executable and every translation unit that links into it.
 add_executable(chip8
     src/main.cpp
-    src/runner.cpp
-    src/debug.cpp
-    src/memory.cpp
-    src/io_glfw.cpp
-    src/cpu.cpp
+    src/app/runner.cpp
+    src/debug/breakpoints_loader.cpp
+    src/debug/debug.cpp
+    src/machine/memory.cpp
+    src/frontends/glfw/io_glfw.cpp
+    src/machine/cpu.cpp
     src/glad.c
 )
 
-# Header search paths: repo-root include/ (glad, KHR) and src/ for local headers.
-# PRIVATE: only this target uses these includes, not dependents.
+# Per-module include roots (do not add src/ itself: a src/debug dir would shadow
+# libstdc++ headers such as <debug/safe_iterator.h> when -I src is used).
 target_include_directories(chip8 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/machine
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/frontends/glfw
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/app
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/debug
 )
 
 # Link GLFW (window, context, input) and GL (OpenGL on Unix; CMake's FindOpenGL module names it GL).

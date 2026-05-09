@@ -4,5 +4,8 @@ include/glad
 src/glad.c
 
 build/*
+breakpoints/*
+!breakpoints/README.md
+!breakpoints/example.txt
 roms/*
 !roms/.*

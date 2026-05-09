@@ -182,9 +182,13 @@ bool Chip8IO_GLFW::shouldClose() const{
 
 
 bool Chip8IO_GLFW::isKeyPressed(int key) const {
-    // Runner-only "host" key: 0x10 = Space for instruction step.
+    // Runner-only "host" keys (not CHIP-8 keypad).
     if (key == 0x10) {
         return glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+    }
+    if (key == 0x11) {
+        return glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS ||
+               glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS;
     }
 
     // Standard CHIP-8 keypad mapping (0x0-0xF) to a common keyboard layout:
