@@ -17,6 +17,7 @@ add_executable(chip8
     src/app/runner.cpp
     src/debug/breakpoints_loader.cpp
     src/debug/debug.cpp
+    src/debug/disassemble_chip8.cpp
     src/machine/memory.cpp
     src/frontends/glfw/io_glfw.cpp
     src/machine/cpu.cpp

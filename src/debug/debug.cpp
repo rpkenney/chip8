@@ -1,6 +1,7 @@
 #include "debug.h"
 
 #include "cpu.h"
+#include "disassemble_chip8.h"
 #include "memory.h"
 
 #include <cstdint>
@@ -19,6 +20,10 @@ void printMachineInspect(const Chip8CPU& cpu, const Chip8Memory& mem, std::FILE*
                      i == 7 || i == 15 ? '\n' : ' ');
     }
     std::fprintf(out, "I=%04X PC=%04X SP=%02X DT=%02X ST=%02X\n", s.I, s.pc, s.sp, s.dt, s.st);
+    if (s.pc + 1 < kMemSize) {
+        const std::uint16_t insn = mem.readWord(s.pc);
+        std::fprintf(out, "insn @ PC: %04X  %s\n", insn, disassembleChip8(insn).c_str());
+    }
 
     std::fprintf(out, "stack:");
     if (s.sp == 0) {
@@ -30,7 +35,7 @@ void printMachineInspect(const Chip8CPU& cpu, const Chip8Memory& mem, std::FILE*
         std::fprintf(out, "\n");
     }
 
-    std::fprintf(out, "--- memory @ PC (bytes; '>' marks PC) ---\n");
+    std::fprintf(out, "--- memory @ PC (16-bit words; [ ] = instruction at PC) ---\n");
     const std::uint16_t pc = s.pc;
     std::uint16_t row_start = (pc >= 8) ? static_cast<std::uint16_t>(pc - 8) : 0;
     row_start &= static_cast<std::uint16_t>(~1);
@@ -42,15 +47,6 @@ void printMachineInspect(const Chip8CPU& cpu, const Chip8Memory& mem, std::FILE*
             break;
         }
         std::fprintf(out, "%04X:", base);
-        for (int b = 0; b < 16; ++b) {
-            const std::uint16_t addr = static_cast<std::uint16_t>(base + b);
-            if (addr >= kMemSize) {
-                break;
-            }
-            const char* mark = (addr == pc) ? ">" : " ";
-            std::fprintf(out, "%s%02X ", mark, mem.readByte(addr));
-        }
-        std::fprintf(out, " |");
         for (int b = 0; b < 16; b += 2) {
             const std::uint16_t addr = static_cast<std::uint16_t>(base + b);
             if (addr + 1 >= kMemSize) {
@@ -71,7 +67,8 @@ void printMachineInspect(const Chip8CPU& cpu, const Chip8Memory& mem, std::FILE*
 }  // namespace
 
 void PrintingDebugSink::onInstructionExecuted(std::uint16_t insn_pc, std::uint16_t opcode) {
-    std::fprintf(stderr, "PC=0x%04X OPC=0x%04X\n", insn_pc, opcode);
+    std::fprintf(stderr, "PC=0x%04X OPC=0x%04X  %s\n", insn_pc, opcode,
+                 disassembleChip8(opcode).c_str());
 }
 
 void PrintingDebugSink::onInspectRequest(const Chip8CPU& cpu, const Chip8Memory& mem, std::FILE* out) {
