@@ -2,11 +2,12 @@
 #include "cpu.h"
 #include "debug.h"
 #include "io.h"
+#include "memory.h"
 
 #include <chrono>
 
-Chip8Runner::Chip8Runner(Chip8CPU& cpu, Chip8IO& io)
-    : cpu(cpu), io(io) {}
+Chip8Runner::Chip8Runner(Chip8CPU& cpu, Chip8IO& io, Chip8Memory& memory)
+    : cpu(cpu), io(io), memory(memory) {}
 
 void Chip8Runner::setStepMode(bool enabled) {
     step_cli = enabled;
@@ -26,10 +27,17 @@ void Chip8Runner::run() {
     auto last_instruction = last_frame;
     bool prev_step_down = false;
     bool prev_continue_down = false;
+    bool prev_dump_down = false;
 
     while (!io.shouldClose()) {
         io.pollEvents();
         auto curr_time = std::chrono::high_resolution_clock::now();
+
+        const bool dump_down = io.isKeyPressed(0x12);  // P — inspect (manual pacing only)
+        if (!auto_pacing && debug_sink != nullptr && dump_down && !prev_dump_down) {
+            debug_sink->onInspectRequest(cpu, memory, stderr);
+        }
+        prev_dump_down = dump_down;
 
         if (curr_time - last_frame > std::chrono::milliseconds(16)) {
             cpu.timerTick();

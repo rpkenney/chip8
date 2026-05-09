@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    Chip8Runner runner(cpu, io);
+    Chip8Runner runner(cpu, io, memory);
     runner.setStepMode(step);
     runner.setDebugSink(&print_sink);
     runner.setBreakpoints(std::move(breakpoints));

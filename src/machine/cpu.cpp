@@ -25,6 +25,18 @@ void Chip8CPU::setTrace(Chip8DebugSink* sink, TraceLevel level) {
     trace_level = level;
 }
 
+Chip8CpuSnapshot Chip8CPU::snapshot() const {
+    Chip8CpuSnapshot s;
+    std::memcpy(s.v.data(), reg, sizeof(reg));
+    s.I = I;
+    s.pc = pc;
+    s.sp = sp;
+    std::memcpy(s.stack.data(), stack, sizeof(stack));
+    s.dt = dt;
+    s.st = st;
+    return s;
+}
+
 void Chip8CPU::timerTick() {
     if (dt > 0) dt--;
     if (st > 0) st--;

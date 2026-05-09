@@ -13,9 +13,8 @@ class Chip8Memory {
         void loadRom(const std::string &path); 
 
         void setByte(uint16_t addr, uint8_t value);
-        uint8_t readByte(uint16_t addr);
-
-        uint16_t readWord(uint16_t addr);
+        uint8_t readByte(uint16_t addr) const;
+        uint16_t readWord(uint16_t addr) const;
         
         uint8_t* raw();        
 

@@ -190,6 +190,9 @@ bool Chip8IO_GLFW::isKeyPressed(int key) const {
         return glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS ||
                glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS;
     }
+    if (key == 0x12) {
+        return glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS;
+    }
 
     // Standard CHIP-8 keypad mapping (0x0-0xF) to a common keyboard layout:
     //

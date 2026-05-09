@@ -30,5 +30,6 @@ If the file is missing or a line is invalid, the program exits with an error on 
 
 - **Space** — one instruction when pacing is manual (after a breakpoint, or with `--step`).
 - **Enter** — resume **auto** pacing after a breakpoint. Ignored if you started with `--step` (stays manual-only).
+- **P** — print a CPU/RAM snapshot to stderr **only while manual pacing** (same as Space/Enter). During auto-run, **P** does nothing.
 
 A future UI can load the same file as the initial breakpoint set and edit the in-memory set at runtime.

@@ -6,11 +6,12 @@
 
 class Chip8CPU;
 class Chip8IO;
+class Chip8Memory;
 class Chip8DebugSink;
 
 class Chip8Runner {
 public:
-    Chip8Runner(Chip8CPU& cpu, Chip8IO& io);
+    Chip8Runner(Chip8CPU& cpu, Chip8IO& io, Chip8Memory& memory);
 
     void setStepMode(bool enabled);
     void setDebugSink(Chip8DebugSink* sink);
@@ -21,6 +22,7 @@ public:
 private:
     Chip8CPU& cpu;
     Chip8IO& io;
+    Chip8Memory& memory;
     Chip8DebugSink* debug_sink = nullptr;
 
     /// Set from `--step`: manual pacing only; Enter never resumes timer-driven run.

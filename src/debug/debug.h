@@ -26,20 +26,26 @@ inline bool trace_enabled(TraceLevel mask, TraceLevel bit) {
     return (static_cast<std::uint8_t>(mask) & static_cast<std::uint8_t>(bit)) != 0;
 }
 
+class Chip8CPU;
+class Chip8Memory;
+
 class Chip8DebugSink {
 public:
     virtual ~Chip8DebugSink() = default;
 
     virtual void onInstructionExecuted(std::uint16_t insn_pc, std::uint16_t opcode) = 0;
     virtual void onBreakpointHit(std::uint16_t pc) {}
+    /// Full machine snapshot (registers, stack, RAM around PC). Default: no-op.
+    virtual void onInspectRequest(const Chip8CPU& cpu, const Chip8Memory& mem, std::FILE* out) {}
 };
 
 class PrintingDebugSink final : public Chip8DebugSink {
 public:
     void onInstructionExecuted(std::uint16_t insn_pc, std::uint16_t opcode) override;
+    void onInspectRequest(const Chip8CPU& cpu, const Chip8Memory& mem, std::FILE* out) override;
     void onBreakpointHit(std::uint16_t pc) override {
         std::fprintf(stderr,
-                     "BREAK PC=0x%04X (Space=step, Enter=resume run)\n",
+                     "BREAK PC=0x%04X (Space=step, Enter=resume run, P=dump when paused)\n",
                      pc);
     }
 };
