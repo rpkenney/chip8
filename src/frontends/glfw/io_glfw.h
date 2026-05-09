@@ -14,12 +14,13 @@ public:
     ~Chip8IO_GLFW() override;
     
     void clearDisplay() override;
-    bool drawSprite(int x, int y, uint8_t* sprite, int height) override;
+    bool drawSprite(int x, int y, const uint8_t* sprite, int height) override;
     void render() override;
     void pollEvents() override;
 
     bool shouldClose() const override;
     bool isKeyPressed(int key) const override;
+    HostDebugKeys readHostDebugKeys() const override;
 
 private:
     GLFWwindow* window;

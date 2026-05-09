@@ -103,7 +103,7 @@ Chip8IO_GLFW::Chip8IO_GLFW(int width, int height, const char* title) {
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    frameBuffer.resize(64 * 32, 0);
+    frameBuffer.resize(DISPLAY_WIDTH * DISPLAY_HEIGHT, 0);
 
     uScreenTexture = glGetUniformLocation(shaderProgram, "screenTexture");
     if (uScreenTexture < 0) {
@@ -114,7 +114,8 @@ Chip8IO_GLFW::Chip8IO_GLFW(int width, int height, const char* title) {
     glBindTexture(GL_TEXTURE_2D, screenTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 64, 32, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0, GL_RED,
+                 GL_UNSIGNED_BYTE, nullptr);
 
     glUseProgram(shaderProgram);
     glUniform1i(uScreenTexture, 0);
@@ -133,15 +134,15 @@ void Chip8IO_GLFW::clearDisplay() {
 }
 
 void Chip8IO_GLFW::setPixel(int x, int y, bool active){
-    frameBuffer[y * 64 + x] = active ? 255 : 0;
+    frameBuffer[y * DISPLAY_WIDTH + x] = active ? 255 : 0;
 }
 
 bool Chip8IO_GLFW::getPixel(int x, int y) {
-    return frameBuffer[y * 64 + x] != 0;
+    return frameBuffer[y * DISPLAY_WIDTH + x] != 0;
 }
 
 
-bool Chip8IO_GLFW::drawSprite(int x, int y, uint8_t* sprite, int height) {
+bool Chip8IO_GLFW::drawSprite(int x, int y, const uint8_t* sprite, int height) {
     bool collision = false;
     for(int i = 0; i < height; i++) {
         uint8_t row = sprite[i];
@@ -161,8 +162,8 @@ void Chip8IO_GLFW::render() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     glBindTexture(GL_TEXTURE_2D, screenTexture);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 64, 32, GL_RED, GL_UNSIGNED_BYTE,
-                    frameBuffer.data());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT, GL_RED,
+                    GL_UNSIGNED_BYTE, frameBuffer.data());
 
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO);
@@ -181,20 +182,17 @@ bool Chip8IO_GLFW::shouldClose() const{
 }
 
 
-bool Chip8IO_GLFW::isKeyPressed(int key) const {
-    // Runner-only "host" keys (not CHIP-8 keypad).
-    if (key == 0x10) {
-        return glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-    }
-    if (key == 0x11) {
-        return glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS ||
-               glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS;
-    }
-    if (key == 0x12) {
-        return glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS;
-    }
+HostDebugKeys Chip8IO_GLFW::readHostDebugKeys() const {
+    HostDebugKeys keys;
+    keys.space = glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+    keys.enter = glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS ||
+                 glfwGetKey(window, GLFW_KEY_KP_ENTER) == GLFW_PRESS;
+    keys.p = glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS;
+    keys.n = glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS;
+    return keys;
+}
 
-    // Standard CHIP-8 keypad mapping (0x0-0xF) to a common keyboard layout:
+bool Chip8IO_GLFW::isKeyPressed(int key) const {
     //
     // 1 2 3 C        1 2 3 4
     // 4 5 6 D   ->   Q W E R

@@ -1,21 +1,21 @@
 #ifndef CHIP8_RUNNER_H
 #define CHIP8_RUNNER_H
 
-#include <cstdint>
-#include <unordered_set>
-
 class Chip8CPU;
 class Chip8IO;
 class Chip8Memory;
-class Chip8DebugSink;
+class Chip8Debugger;
 
+/// Owns the main loop and timing only: 16 ms timer/render cadence and pumping the
+/// debugger every iteration. All debug state (pacing, breakpoints, step-over,
+/// observer) lives in `Chip8Debugger`.
 class Chip8Runner {
 public:
-    Chip8Runner(Chip8CPU& cpu, Chip8IO& io, Chip8Memory& memory);
+    /// CHIP-8 timer/render rate is 60 Hz; 16 ms ≈ 1000/60 (the original
+    /// hand-tuned value, kept verbatim so behavior matches prior commits).
+    static constexpr int FRAME_INTERVAL_MS = 16;
 
-    void setStepMode(bool enabled);
-    void setDebugSink(Chip8DebugSink* sink);
-    void setBreakpoints(std::unordered_set<std::uint16_t> addresses);
+    Chip8Runner(Chip8CPU& cpu, Chip8IO& io, Chip8Memory& memory, Chip8Debugger& debugger);
 
     void run();
 
@@ -23,14 +23,7 @@ private:
     Chip8CPU& cpu;
     Chip8IO& io;
     Chip8Memory& memory;
-    Chip8DebugSink* debug_sink = nullptr;
-
-    /// Set from `--step`: manual pacing only; Enter never resumes timer-driven run.
-    bool step_cli = false;
-    /// When false, only Space advances the PC (breakpoint or `--step`). When true, the 2 ms timer runs the CPU (subject to breakpoints).
-    bool auto_pacing = true;
-    std::unordered_set<std::uint16_t> breakpoints;
-    bool skip_breakpoint_once = false;
+    Chip8Debugger& debugger;
 };
 
 #endif

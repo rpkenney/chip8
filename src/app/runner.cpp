@@ -1,92 +1,42 @@
 #include "runner.h"
+
 #include "cpu.h"
-#include "debug.h"
+#include "debug_frame.h"
+#include "debugger.h"
+#include "format_debug_frame.h"
 #include "io.h"
 #include "memory.h"
 
 #include <chrono>
+#include <cstdio>
 
-Chip8Runner::Chip8Runner(Chip8CPU& cpu, Chip8IO& io, Chip8Memory& memory)
-    : cpu(cpu), io(io), memory(memory) {}
-
-void Chip8Runner::setStepMode(bool enabled) {
-    step_cli = enabled;
-    auto_pacing = !enabled;
-}
-
-void Chip8Runner::setDebugSink(Chip8DebugSink* sink) {
-    debug_sink = sink;
-}
-
-void Chip8Runner::setBreakpoints(std::unordered_set<std::uint16_t> addresses) {
-    breakpoints = std::move(addresses);
-}
+Chip8Runner::Chip8Runner(Chip8CPU& cpu, Chip8IO& io, Chip8Memory& memory,
+                         Chip8Debugger& debugger)
+    : cpu(cpu), io(io), memory(memory), debugger(debugger) {}
 
 void Chip8Runner::run() {
     auto last_frame = std::chrono::high_resolution_clock::now();
-    auto last_instruction = last_frame;
-    bool prev_step_down = false;
-    bool prev_continue_down = false;
-    bool prev_dump_down = false;
+    HostDebugKeys prev{};
 
     while (!io.shouldClose()) {
         io.pollEvents();
-        auto curr_time = std::chrono::high_resolution_clock::now();
 
-        const bool dump_down = io.isKeyPressed(0x12);  // P — inspect (manual pacing only)
-        if (!auto_pacing && debug_sink != nullptr && dump_down && !prev_dump_down) {
-            debug_sink->onInspectRequest(cpu, memory, stderr);
+        const HostDebugKeys keys = io.readHostDebugKeys();
+        if (keys.space && !prev.space) debugger.requestStep();
+        if (keys.enter && !prev.enter) debugger.requestResume();
+        if (keys.n && !prev.n) debugger.requestStepOver();
+        if (keys.p && !prev.p && debugger.pacing() == PausePacing::Manual) {
+            formatDebugFrame(debugger.captureFrame(cpu, memory), stderr);
         }
-        prev_dump_down = dump_down;
+        prev = keys;
 
-        if (curr_time - last_frame > std::chrono::milliseconds(16)) {
+        const auto now = std::chrono::high_resolution_clock::now();
+        if (now - last_frame > std::chrono::milliseconds(FRAME_INTERVAL_MS)) {
             cpu.timerTick();
             io.render();
-            last_frame = curr_time;
+            last_frame = now;
         }
 
-        const bool step_down = io.isKeyPressed(0x10);   // Space
-        const bool continue_down = io.isKeyPressed(0x11);  // Enter
-
-        if (!auto_pacing && !step_cli) {
-            if (continue_down && !prev_continue_down) {
-                auto_pacing = true;
-                skip_breakpoint_once = true;
-            }
-            prev_continue_down = continue_down;
-        } else {
-            prev_continue_down = false;
-        }
-
-        bool do_execute = false;
-
-        if (!auto_pacing) {
-            if (step_down && !prev_step_down) {
-                do_execute = true;
-            }
-        } else if (curr_time - last_instruction >= std::chrono::milliseconds(2)) {
-            const std::uint16_t pc = cpu.getPC();
-            if (!breakpoints.empty() && breakpoints.count(pc) != 0) {
-                if (skip_breakpoint_once) {
-                    skip_breakpoint_once = false;
-                } else {
-                    auto_pacing = false;
-                    if (debug_sink != nullptr) {
-                        debug_sink->onBreakpointHit(pc);
-                    }
-                }
-            }
-
-            if (auto_pacing) {
-                do_execute = true;
-            }
-        }
-
-        if (do_execute) {
-            cpu.executeInstruction();
-            last_instruction = curr_time;
-        }
-
-        prev_step_down = step_down;
+        debugger.tick(cpu, memory);
     }
 }

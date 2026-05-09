@@ -2,27 +2,17 @@
 #include "memory.h"
 #include "io.h"
 
-#include <stdexcept>
-#include <cstdlib>
-#include <ctime>
-#include <cstring>
-#include <iostream>
-#include <iomanip>
 #include <cstdio>
+#include <cstring>
+#include <stdexcept>
 
 Chip8CPU::Chip8CPU(Chip8Memory &mem, Chip8IO& io)
-    : memory(mem), io(io), stack{}, reg{} {
-    std::srand(std::time(nullptr));
+    : memory(mem), io(io), rng(std::random_device{}()), stack{}, reg{} {
     sp = 0;
-    pc = Chip8Memory::PROGRAM_START;    
+    pc = Chip8Memory::PROGRAM_START;
     I = 0;
     dt = 0;
     st = 0;
-}
-
-void Chip8CPU::setTrace(Chip8DebugSink* sink, TraceLevel level) {
-    debug_sink = sink;
-    trace_level = level;
 }
 
 Chip8CpuSnapshot Chip8CPU::snapshot() const {
@@ -43,12 +33,11 @@ void Chip8CPU::timerTick() {
 }
 
 static void handleInvalidOpcode(uint16_t opcode) {
-    std::cout << "invalid opcode: 0x" << std::hex << std::uppercase << std::setfill('0') << std::setw(4) << opcode << std::endl;
+    std::fprintf(stderr, "invalid opcode: 0x%04X\n", opcode);
     throw std::runtime_error("invalid opcode");
 }
 
 void Chip8CPU::executeInstruction() {
-    const uint16_t insn_pc = pc;
     uint16_t opcode = memory.readWord(pc);
     pc += 2;
     uint8_t n = (opcode & 0x000F);
@@ -167,12 +156,16 @@ void Chip8CPU::executeInstruction() {
             pc = memory.readWord(nnn + static_cast<uint16_t>(reg[0]));
             break;
         case 0xC000:
-            reg[x] = (std::rand() % 256) & nn;
+            reg[x] = static_cast<uint8_t>(rng()) & nn;
             break;
-        case 0xD000:
-            
-            io.drawSprite(reg[x], reg[y], memory.raw() + I, n);
+        case 0xD000: {
+            // CHIP-8 sprite height is `n`, the low nibble of the opcode (0-15).
+            constexpr std::size_t kMaxSpriteHeight = 15;
+            uint8_t sprite[kMaxSpriteHeight];
+            memory.readBytes(I, sprite, n);
+            io.drawSprite(reg[x], reg[y], sprite, n);
             break;
+        }
         case 0xE000:
             switch ( opcode & 0x00F0 ) {
                 case 0x0090:
@@ -209,19 +202,15 @@ void Chip8CPU::executeInstruction() {
                     memory.setByte(I + 2, (reg[x] % 100) % 10);
                     break;
                 case 0x0055:
-                    memcpy(memory.raw() + I, reg, x + 1);
+                    memory.writeBytes(I, reg, x + 1);
                     break;
                 case 0x0065:
-                    memcpy(reg, memory.raw() + I, x + 1);
+                    memory.readBytes(I, reg, x + 1);
                     break;
                 default:
                     handleInvalidOpcode(opcode);
             }
             break; 
             
-    }
-
-    if (debug_sink && trace_enabled(trace_level, TraceLevel::Instructions)) {
-        debug_sink->onInstructionExecuted(insn_pc, opcode);
     }
 }

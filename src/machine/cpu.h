@@ -3,8 +3,7 @@
 
 #include <array>
 #include <cstdint>
-
-#include "debug.h"
+#include <random>
 
 class Chip8Memory;
 class Chip8IO;
@@ -23,11 +22,16 @@ class Chip8CPU {
 public:
     Chip8CPU(Chip8Memory& mem, Chip8IO& io);
 
-    void setTrace(Chip8DebugSink* sink, TraceLevel level);
-
     std::uint16_t getPC() const { return pc; }
+    /// Current stack depth (0 = empty). Used by the runner for step-over.
+    std::uint8_t getSP() const { return sp; }
 
     Chip8CpuSnapshot snapshot() const;
+
+    /// Re-seed the per-CPU RNG used by `Cxnn` (RND). Default seed comes from
+    /// `std::random_device` in the constructor; tests/repros call this to
+    /// pin the sequence.
+    void setSeed(std::uint32_t seed) { rng.seed(seed); }
 
     void executeInstruction();
     void timerTick();
@@ -36,22 +40,14 @@ private:
     Chip8Memory& memory;
     Chip8IO& io;
 
-    Chip8DebugSink* debug_sink = nullptr;
-    TraceLevel trace_level = TraceLevel::Off;
+    std::mt19937 rng;
 
     uint16_t pc;
-
     uint16_t stack[16];
     uint8_t sp;
-
-
     uint8_t reg[16];
-
-
     uint16_t I;
-
     uint8_t dt;
     uint8_t st;
-
 };
 #endif
