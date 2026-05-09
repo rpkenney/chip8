@@ -20,6 +20,11 @@ Chip8CPU::Chip8CPU(Chip8Memory &mem, Chip8IO& io)
     st = 0;
 }
 
+void Chip8CPU::setTrace(Chip8DebugSink* sink, TraceLevel level) {
+    debug_sink = sink;
+    trace_level = level;
+}
+
 void Chip8CPU::timerTick() {
     if (dt > 0) dt--;
     if (st > 0) st--;
@@ -31,6 +36,7 @@ static void handleInvalidOpcode(uint16_t opcode) {
 }
 
 void Chip8CPU::executeInstruction() {
+    const uint16_t insn_pc = pc;
     uint16_t opcode = memory.readWord(pc);
     pc += 2;
     uint8_t n = (opcode & 0x000F);
@@ -84,6 +90,9 @@ void Chip8CPU::executeInstruction() {
             break;
         case 0x8000:
        	    switch (opcode & 0x000F) {
+                case 0x0000:
+                    reg[x] = reg[y];
+                    break;
                 case 0x0001:
                     reg[x] = reg[x] | reg[y];
                     break;
@@ -93,40 +102,43 @@ void Chip8CPU::executeInstruction() {
                 case 0x0003:
                     reg[x] = reg[x] ^ reg[y]; 
                     break;
-                case 0x0004:
-                    uint16_t sum;
-                    sum = reg[x] + reg[y];
-                    if (sum > 0xFF){
-                        reg[15] = 0x01;
-                    } else {
-                        reg[15] = 0x00;
-                    }
+                case 0x0004: {
+                    const uint16_t sum =
+                        static_cast<uint16_t>(reg[x]) + reg[y];
                     reg[x] = static_cast<uint8_t>(sum);
+                    reg[15] = static_cast<uint8_t>(sum >> 8);
                     break;
-                case 0x0005:
-                    if (reg[y] > reg[x]) {
-                        reg[15] = 0x00;
-                    } else {
-                        reg[15] = 0x01;
-                    }
-                    reg[x] -= reg[y];
+                }
+                case 0x0005: {
+                    const uint8_t vx = reg[x];
+                    const uint8_t vy = reg[y];
+                    reg[x] = vx - vy;
+                    reg[15] = (vy > vx) ? 0x00 : 0x01;
                     break;
-                case 0x0006:
-                    reg[x] = reg[y] >> 1;
-                    reg[15] = reg[y] & 0x01;
+                }
+                case 0x0006: {
+                    // Shift quirks exist (some interpreters use Vy as the source).
+                    // For now, use Vx as the source; preserve the pre-shift bit for VF.
+                    const uint8_t v = reg[x];
+                    reg[x] = v >> 1;
+                    reg[15] = v & 0x01;
                     break;
-                case 0x0007:
-                    if(reg[x] > reg[y]) {
-                        reg[15] = 0x00;
-                    } else {
-                        reg[15] = 0x01;
-                    }
-                    reg[x] = reg[y] - reg[x];
+                }
+                case 0x0007: {
+                    const uint8_t vx = reg[x];
+                    const uint8_t vy = reg[y];
+                    reg[x] = vy - vx;
+                    reg[15] = (vx > vy) ? 0x00 : 0x01;
                     break;
-                case 0x000E:
-                    reg[x] = reg[y] << 1;
-                    reg[15] = reg[y] & 0x80 >> 7;
+                }
+                case 0x000E: {
+                    // Shift quirks exist (some interpreters use Vy as the source).
+                    // For now, use Vx as the source; preserve the pre-shift bit for VF.
+                    const uint8_t v = reg[x];
+                    reg[x] = v << 1;
+                    reg[15] = (v & 0x80) >> 7;
                     break;
+                }
                 default:
                     handleInvalidOpcode(opcode);
             }             
@@ -195,5 +207,9 @@ void Chip8CPU::executeInstruction() {
             }
             break; 
             
+    }
+
+    if (debug_sink && trace_enabled(trace_level, TraceLevel::Instructions)) {
+        debug_sink->onInstructionExecuted(insn_pc, opcode);
     }
 }

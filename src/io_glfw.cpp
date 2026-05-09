@@ -182,5 +182,38 @@ bool Chip8IO_GLFW::shouldClose() const{
 
 
 bool Chip8IO_GLFW::isKeyPressed(int key) const {
-    return false;
+    // Runner-only "host" key: 0x10 = Space for instruction step.
+    if (key == 0x10) {
+        return glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+    }
+
+    // Standard CHIP-8 keypad mapping (0x0-0xF) to a common keyboard layout:
+    //
+    // 1 2 3 C        1 2 3 4
+    // 4 5 6 D   ->   Q W E R
+    // 7 8 9 E        A S D F
+    // A 0 B F        Z X C V
+    static const int KEYMAP[16] = {
+        GLFW_KEY_X,  // 0
+        GLFW_KEY_1,  // 1
+        GLFW_KEY_2,  // 2
+        GLFW_KEY_3,  // 3
+        GLFW_KEY_Q,  // 4
+        GLFW_KEY_W,  // 5
+        GLFW_KEY_E,  // 6
+        GLFW_KEY_A,  // 7
+        GLFW_KEY_S,  // 8
+        GLFW_KEY_D,  // 9
+        GLFW_KEY_Z,  // A
+        GLFW_KEY_C,  // B
+        GLFW_KEY_4,  // C
+        GLFW_KEY_R,  // D
+        GLFW_KEY_F,  // E
+        GLFW_KEY_V,  // F
+    };
+
+    if (key < 0 || key > 0xF) {
+        return false;
+    }
+    return glfwGetKey(window, KEYMAP[key]) == GLFW_PRESS;
 }
