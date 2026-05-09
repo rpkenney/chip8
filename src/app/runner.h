@@ -1,29 +1,32 @@
 #ifndef CHIP8_RUNNER_H
 #define CHIP8_RUNNER_H
 
+#include <chrono>
+
 class Chip8CPU;
-class Chip8IO;
 class Chip8Memory;
 class Chip8Debugger;
 
-/// Owns the main loop and timing only: 16 ms timer/render cadence and pumping the
-/// debugger every iteration. All debug state (pacing, breakpoints, step-over,
-/// observer) lives in `Chip8Debugger`.
+/// Per-iteration scheduler. Owns the 60 Hz CPU timer cadence and pumps the
+/// debugger; the frontend owns the actual `while` loop and decides when to
+/// render. All debug state (pacing, breakpoints, step-over, observer) lives
+/// in `Chip8Debugger`.
 class Chip8Runner {
 public:
-    /// CHIP-8 timer/render rate is 60 Hz; 16 ms ≈ 1000/60 (the original
-    /// hand-tuned value, kept verbatim so behavior matches prior commits).
-    static constexpr int FRAME_INTERVAL_MS = 16;
+    static constexpr int FRAME_INTERVAL_MS = 16;  // ~60 Hz
 
-    Chip8Runner(Chip8CPU& cpu, Chip8IO& io, Chip8Memory& memory, Chip8Debugger& debugger);
+    Chip8Runner(Chip8CPU& cpu, Chip8Memory& memory, Chip8Debugger& debugger);
 
-    void run();
+    /// Runs one loop iteration: advances `cpu.timerTick()` if the 60 Hz
+    /// boundary has elapsed and pumps the debugger. Returns true when the
+    /// boundary was crossed (the caller renders on true).
+    bool tick();
 
 private:
     Chip8CPU& cpu;
-    Chip8IO& io;
     Chip8Memory& memory;
     Chip8Debugger& debugger;
+    std::chrono::high_resolution_clock::time_point last_frame;
 };
 
 #endif

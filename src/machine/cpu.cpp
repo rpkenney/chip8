@@ -1,13 +1,15 @@
 #include "cpu.h"
+#include "display.h"
+#include "keypad.h"
 #include "memory.h"
-#include "io.h"
 
 #include <cstdio>
 #include <cstring>
 #include <stdexcept>
 
-Chip8CPU::Chip8CPU(Chip8Memory &mem, Chip8IO& io)
-    : memory(mem), io(io), rng(std::random_device{}()), stack{}, reg{} {
+Chip8CPU::Chip8CPU(Chip8Memory& mem, Chip8Display& display, Chip8Keypad& keypad)
+    : memory(mem), display(display), keypad(keypad), rng(std::random_device{}()),
+      stack{}, reg{} {
     sp = 0;
     pc = Chip8Memory::PROGRAM_START;
     I = 0;
@@ -55,7 +57,7 @@ void Chip8CPU::executeInstruction() {
                     pc = stack[--sp];
                     break;
                 case 0x00E0:
-                    io.clearDisplay();
+                    display.clearDisplay();
                     break;
                 default:
                     handleInvalidOpcode(opcode);
@@ -163,18 +165,18 @@ void Chip8CPU::executeInstruction() {
             constexpr std::size_t kMaxSpriteHeight = 15;
             uint8_t sprite[kMaxSpriteHeight];
             memory.readBytes(I, sprite, n);
-            io.drawSprite(reg[x], reg[y], sprite, n);
+            display.drawSprite(reg[x], reg[y], sprite, n);
             break;
         }
         case 0xE000:
             switch ( opcode & 0x00F0 ) {
                 case 0x0090:
-                   if ( io.isKeyPressed(reg[x]) ) {
+                   if (keypad.isKeyPressed(reg[x])) {
                         pc += 2;
                    } 
                    break;
                 case 0x00A0:
-                    if ( !io.isKeyPressed(reg[x]) ) {
+                    if (!keypad.isKeyPressed(reg[x])) {
                         pc += 2;
                     }
                     break;

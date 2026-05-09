@@ -6,7 +6,8 @@
 #include <random>
 
 class Chip8Memory;
-class Chip8IO;
+class Chip8Display;
+class Chip8Keypad;
 
 struct Chip8CpuSnapshot {
     std::array<std::uint8_t, 16> v{};
@@ -20,7 +21,7 @@ struct Chip8CpuSnapshot {
 
 class Chip8CPU {
 public:
-    Chip8CPU(Chip8Memory& mem, Chip8IO& io);
+    Chip8CPU(Chip8Memory& mem, Chip8Display& display, Chip8Keypad& keypad);
 
     std::uint16_t getPC() const { return pc; }
     /// Current stack depth (0 = empty). Used by the runner for step-over.
@@ -38,7 +39,8 @@ public:
 
 private:
     Chip8Memory& memory;
-    Chip8IO& io;
+    Chip8Display& display;
+    Chip8Keypad& keypad;
 
     std::mt19937 rng;
 

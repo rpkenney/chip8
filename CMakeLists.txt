@@ -20,9 +20,11 @@ add_executable(chip8
     src/debug/debugger.cpp
     src/debug/disassemble_chip8.cpp
     src/debug/format_debug_frame.cpp
+    src/machine/framebuffer.cpp
+    src/machine/keypad_state.cpp
     src/machine/memory.cpp
     src/machine/rom_loader.cpp
-    src/frontends/glfw/io_glfw.cpp
+    src/frontends/glfw/glfw_frontend.cpp
     src/machine/cpu.cpp
     src/glad.c
 )
