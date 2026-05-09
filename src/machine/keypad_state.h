@@ -4,7 +4,6 @@
 #include "keypad.h"
 
 #include <array>
-#include <cstddef>
 
 class Chip8KeypadState : public Chip8Keypad {
 public:

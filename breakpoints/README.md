@@ -14,7 +14,7 @@ Values must fit in 16 bits (`0`–`65535`).
 
 ## Checked-in sample (`example.txt`)
 
-Contains a single breakpoint at **`0x200`** (program entry). Run without `--step`, confirm stderr prints `BREAK PC=0x0200`. You are then in **manual** pacing: **Space** steps one instruction; **Enter** resumes timer-driven run.
+Contains a single breakpoint at **`0x200`** (program entry). Run with `-b breakpoints/example.txt` and a ROM; stderr should print `BREAK PC=0x0200`. Execution is **paused** at that PC: **Space** steps one instruction; **N** step-over; **Enter** resumes timer-driven run.
 
 ## CLI
 
@@ -26,10 +26,10 @@ Short flag: `-b`.
 
 If the file is missing or a line is invalid, the program exits with an error on startup.
 
-## Keys (current shell)
+## Keys (GLFW shell)
 
-- **Space** — one instruction when pacing is manual (after a breakpoint, or with `--step`).
-- **Enter** — resume **auto** pacing after a breakpoint. Ignored if you started with `--step` (stays manual-only).
-- **P** — print a CPU/RAM snapshot to stderr **only while manual pacing** (same as Space/Enter). During auto-run, **P** does nothing.
+- **Space** — one instruction while paused (after a breakpoint or panel **Pause**).
+- **N** — step over (see main `README` for behavior).
+- **Enter** — resume **running** (auto pacing).
 
 A future UI can load the same file as the initial breakpoint set and edit the in-memory set at runtime.

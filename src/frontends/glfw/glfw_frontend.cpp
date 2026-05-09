@@ -1,28 +1,43 @@
 #include "glfw_frontend.h"
 
-#include "breakpoints_loader.h"
 #include "cpu.h"
-#include "debug.h"
 #include "debug_frame.h"
 #include "debugger.h"
-#include "format_debug_frame.h"
+#include "emulator.h"
 #include "framebuffer.h"
+#include "imgui_panels.h"
 #include "keypad_state.h"
 #include "memory.h"
-#include "rom_loader.h"
 #include "runner.h"
 #include "shaders.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <cstdio>
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 #include <stdexcept>
-#include <string>
-#include <unordered_set>
-#include <utility>
 
 namespace {
+
+void centerWindowOnPrimaryMonitor(GLFWwindow* window, int width, int height) {
+    GLFWmonitor* const mon = glfwGetPrimaryMonitor();
+    if (mon == nullptr) {
+        return;
+    }
+    int mx = 0;
+    int my = 0;
+    glfwGetMonitorPos(mon, &mx, &my);
+    const GLFWvidmode* const vm = glfwGetVideoMode(mon);
+    if (vm == nullptr) {
+        return;
+    }
+    const int x = mx + (vm->width - width) / 2;
+    const int y = my + (vm->height - height) / 2;
+    glfwSetWindowPos(window, x, y);
+}
 
 GLFWwindow* createGlfwWindow(int width, int height, const char* title) {
     glfwInit();
@@ -34,6 +49,7 @@ GLFWwindow* createGlfwWindow(int width, int height, const char* title) {
     if (window == nullptr) {
         throw std::runtime_error("Failed to create GLFW window");
     }
+    centerWindowOnPrimaryMonitor(window, width, height);
     glfwMakeContextCurrent(window);
     return window;
 }
@@ -95,8 +111,10 @@ constexpr int kChip8KeyGlfwMap[16] = {
     GLFW_KEY_V,  // F
 };
 
-/// Owns the GLFW window, OpenGL program, VAO/VBO, and the screen texture.
-/// Knows how to upload a `Chip8FrameBuffer` and present a frame.
+/// Owns the GLFW window, GL program, VAO/VBO, screen texture, and the ImGui
+/// context. Provides a small set of primitives the loop composes
+/// (`uploadFramebuffer`, `drawFullscreenQuad`, `swap`) so the loop can choose
+/// between the legacy quad path and an ImGui frame.
 class GlfwWindow {
 public:
     GlfwWindow(int width, int height, const char* title) {
@@ -140,9 +158,19 @@ public:
 
         glUseProgram(program_);
         glUniform1i(u_screen, 0);
+
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+        ImGui_ImplGlfw_InitForOpenGL(window_, /*install_callbacks=*/true);
+        ImGui_ImplOpenGL3_Init("#version 330");
     }
 
     ~GlfwWindow() {
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+
         glDeleteTextures(1, &texture_);
         glDeleteVertexArrays(1, &vao_);
         glDeleteBuffers(1, &vbo_);
@@ -156,21 +184,25 @@ public:
     GLFWwindow* handle() const { return window_; }
     bool shouldClose() const { return glfwWindowShouldClose(window_); }
     void pollEvents() { glfwPollEvents(); }
+    unsigned int texture() const { return texture_; }
 
-    void render(const Chip8FrameBuffer& fb) {
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+    void framebufferSize(int& w, int& h) const {
+        glfwGetFramebufferSize(window_, &w, &h);
+    }
 
+    void uploadFramebuffer(const Chip8FrameBuffer& fb) {
         glBindTexture(GL_TEXTURE_2D, texture_);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, Chip8FrameBuffer::WIDTH,
                         Chip8FrameBuffer::HEIGHT, GL_RED, GL_UNSIGNED_BYTE, fb.pixels());
+    }
 
+    void drawFullscreenQuad() {
         glUseProgram(program_);
         glBindVertexArray(vao_);
         glDrawArrays(GL_TRIANGLES, 0, 6);
-
-        glfwSwapBuffers(window_);
     }
+
+    void swap() { glfwSwapBuffers(window_); }
 
 private:
     GLFWwindow* window_ = nullptr;
@@ -190,71 +222,111 @@ void syncKeypadFromGlfw(GLFWwindow* win, Chip8KeypadState& kp) {
 
 namespace glfw_frontend {
 
-int run(const Options& opts) {
-    Chip8Memory memory;
-    {
-        std::string err;
-        if (!loadRomFromFile(memory, opts.rom_path, err)) {
-            std::fprintf(stderr, "%s\n", err.c_str());
-            return 1;
-        }
-    }
+int run(Chip8Emulator& emu) {
+    Chip8Memory& memory = emu.memory();
+    Chip8FrameBuffer& fb = emu.framebuffer();
+    Chip8KeypadState& kp = emu.keypad();
+    Chip8CPU& cpu = emu.cpu();
+    Chip8Debugger& debugger = emu.debugger();
+    Chip8Runner& runner = emu.runner();
 
-    std::unordered_set<std::uint16_t> breakpoints;
-    if (opts.breakpoints_path != nullptr) {
-        std::string err;
-        if (!loadBreakpointsFile(opts.breakpoints_path, breakpoints, err)) {
-            std::fprintf(stderr, "%s\n", err.c_str());
-            return 1;
-        }
-    }
-
-    Chip8FrameBuffer fb;
-    Chip8KeypadState kp;
-    Chip8CPU cpu(memory, fb, kp);
-
-    TerminalDebugObserver terminal_observer;
-    Chip8Debugger debugger;
-    debugger.setObserver(&terminal_observer);
-    debugger.setStartPaused(opts.step);
-    if (opts.trace) {
-        debugger.setTraceLevel(TraceLevel::Instructions);
-    }
-    debugger.setBreakpoints(std::move(breakpoints));
-
-    Chip8Runner runner(cpu, memory, debugger);
-
-    GlfwWindow window(640, 320, "CHIP-8");
+    GlfwWindow window(1280, 720, "CHIP-8");
     GLFWwindow* const win = window.handle();
 
+    bool panels_visible = false;
+    bool prev_f1 = false;
     bool prev_space = false;
     bool prev_enter = false;
-    bool prev_p = false;
     bool prev_n = false;
 
     while (!window.shouldClose()) {
         window.pollEvents();
-        syncKeypadFromGlfw(win, kp);
 
-        const bool space = glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS;
-        const bool enter = glfwGetKey(win, GLFW_KEY_ENTER) == GLFW_PRESS ||
-                           glfwGetKey(win, GLFW_KEY_KP_ENTER) == GLFW_PRESS;
-        const bool p = glfwGetKey(win, GLFW_KEY_P) == GLFW_PRESS;
-        const bool n = glfwGetKey(win, GLFW_KEY_N) == GLFW_PRESS;
-
-        if (space && !prev_space) debugger.requestStep();
-        if (enter && !prev_enter) debugger.requestResume();
-        if (n && !prev_n) debugger.requestStepOver();
-        if (p && !prev_p && debugger.pacing() == PausePacing::Manual) {
-            formatDebugFrame(debugger.captureFrame(cpu, memory), stderr);
+        // F1 always toggles panels, even when an ImGui widget has focus, so
+        // there is always a way to dismiss the UI.
+        const bool f1 = glfwGetKey(win, GLFW_KEY_F1) == GLFW_PRESS;
+        if (f1 && !prev_f1) {
+            panels_visible = !panels_visible;
         }
-        prev_space = space;
-        prev_enter = enter;
-        prev_p = p;
-        prev_n = n;
+        prev_f1 = f1;
+
+        // ImGui swallows keys when a text widget has focus.
+        const bool ui_eats_input =
+            panels_visible && ImGui::GetIO().WantCaptureKeyboard;
+
+        if (ui_eats_input) {
+            kp.clear();
+            prev_space = prev_enter = prev_n = false;
+        } else {
+            syncKeypadFromGlfw(win, kp);
+
+            const bool space = glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS;
+            const bool enter = glfwGetKey(win, GLFW_KEY_ENTER) == GLFW_PRESS ||
+                               glfwGetKey(win, GLFW_KEY_KP_ENTER) == GLFW_PRESS;
+            const bool n = glfwGetKey(win, GLFW_KEY_N) == GLFW_PRESS;
+
+            if (space && !prev_space) debugger.requestStep();
+            if (enter && !prev_enter) debugger.requestResume();
+            if (n && !prev_n) debugger.requestStepOver();
+            prev_space = space;
+            prev_enter = enter;
+            prev_n = n;
+        }
 
         if (runner.tick()) {
-            window.render(fb);
+            int fb_w = 0, fb_h = 0;
+            window.framebufferSize(fb_w, fb_h);
+            glViewport(0, 0, fb_w, fb_h);
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            window.uploadFramebuffer(fb);
+
+            if (panels_visible) {
+                ImGui_ImplOpenGL3_NewFrame();
+                ImGui_ImplGlfw_NewFrame();
+                ImGui::NewFrame();
+                const imgui_panels::CentralRect central =
+                    imgui_panels::build(debugger, cpu, memory);
+                ImGui::Render();
+
+                // Draw the CHIP-8 quad sized to the dockspace's central node.
+                // The quad is aspect-fit (2:1) and centered inside that rect.
+                if (central.valid) {
+                    const ImVec2 scale = ImGui::GetIO().DisplayFramebufferScale;
+                    const float px = central.x * scale.x;
+                    const float py = central.y * scale.y;
+                    const float pw = central.w * scale.x;
+                    const float ph = central.h * scale.y;
+
+                    constexpr float aspect =
+                        static_cast<float>(Chip8FrameBuffer::WIDTH) /
+                        static_cast<float>(Chip8FrameBuffer::HEIGHT);
+                    float qw = pw;
+                    float qh = qw / aspect;
+                    if (qh > ph) {
+                        qh = ph;
+                        qw = qh * aspect;
+                    }
+                    const float pad_x = (pw - qw) * 0.5f;
+                    const float pad_y = (ph - qh) * 0.5f;
+
+                    const int gx = static_cast<int>(px + pad_x);
+                    // GL viewport is bottom-up; ImGui rect is top-down.
+                    const int gy = fb_h - static_cast<int>(py + pad_y) -
+                                   static_cast<int>(qh);
+                    glViewport(gx, gy, static_cast<int>(qw),
+                               static_cast<int>(qh));
+                    window.drawFullscreenQuad();
+                    glViewport(0, 0, fb_w, fb_h);
+                }
+
+                ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            } else {
+                window.drawFullscreenQuad();
+            }
+
+            window.swap();
         }
     }
 

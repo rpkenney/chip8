@@ -24,7 +24,7 @@ public:
     Chip8CPU(Chip8Memory& mem, Chip8Display& display, Chip8Keypad& keypad);
 
     std::uint16_t getPC() const { return pc; }
-    /// Current stack depth (0 = empty). Used by the runner for step-over.
+    /// Current stack depth (0 = empty). Used by the debugger for step-over.
     std::uint8_t getSP() const { return sp; }
 
     Chip8CpuSnapshot snapshot() const;

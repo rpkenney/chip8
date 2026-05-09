@@ -1,0 +1,36 @@
+#include "emulator.h"
+
+#include "breakpoints_loader.h"
+#include "rom_loader.h"
+
+#include <utility>
+#include <unordered_set>
+
+std::unique_ptr<Chip8Emulator> Chip8Emulator::create(const Chip8EmulatorConfig& cfg,
+                                                    std::string& err) {
+    std::unique_ptr<Chip8Emulator> emu(new Chip8Emulator());
+    if (!emu->load(cfg, err)) {
+        return nullptr;
+    }
+    return emu;
+}
+
+bool Chip8Emulator::load(const Chip8EmulatorConfig& cfg, std::string& err) {
+    if (!loadRomFromFile(memory_, cfg.rom_path, err)) {
+        return false;
+    }
+
+    std::unordered_set<std::uint16_t> breakpoints;
+    if (cfg.breakpoints_path != nullptr) {
+        if (!loadBreakpointsFile(cfg.breakpoints_path, breakpoints, err)) {
+            return false;
+        }
+    }
+
+    debugger_.setObserver(&terminal_observer_);
+    if (cfg.trace) {
+        debugger_.setTraceLevel(TraceLevel::Instructions);
+    }
+    debugger_.setBreakpoints(std::move(breakpoints));
+    return true;
+}

@@ -26,13 +26,10 @@ inline bool trace_enabled(TraceLevel mask, TraceLevel bit) {
     return (static_cast<std::uint8_t>(mask) & static_cast<std::uint8_t>(bit)) != 0;
 }
 
-/// Why we switched to manual pacing. `pc` is the next instruction to run. Only
-/// `Breakpoint` and `StepOverComplete` are emitted today; the rest are reserved.
+/// Why execution paused. `pc` is the next instruction to run (not yet executed).
 enum class PauseReason {
     Breakpoint,
-    StepComplete,
     StepOverComplete,
-    UserPause,
 };
 
 class Chip8DebugObserver {
@@ -52,14 +49,11 @@ public:
         switch (reason) {
             case PauseReason::Breakpoint:
                 std::fprintf(stderr,
-                             "BREAK PC=0x%04X (Space=step, N=step over, Enter=resume run, P=dump when paused)\n",
+                             "BREAK PC=0x%04X (Space=step, N=step over, Enter=resume)\n",
                              pc);
                 break;
             case PauseReason::StepOverComplete:
                 std::fprintf(stderr, "STEP OVER -> PC=0x%04X\n", pc);
-                break;
-            case PauseReason::StepComplete:
-            case PauseReason::UserPause:
                 break;
         }
     }

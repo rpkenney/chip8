@@ -13,11 +13,6 @@ void Chip8Debugger::setObserver(Chip8DebugObserver* o) {
     observer = o;
 }
 
-void Chip8Debugger::setStartPaused(bool yes) {
-    start_paused_cli = yes;
-    auto_pacing = !yes;
-}
-
 void Chip8Debugger::setBreakpoints(std::unordered_set<std::uint16_t> bps) {
     breakpoints = std::move(bps);
 }
@@ -43,7 +38,7 @@ void Chip8Debugger::requestStepOver() {
 }
 
 void Chip8Debugger::requestResume() {
-    if (!auto_pacing && !start_paused_cli) {
+    if (!auto_pacing) {
         auto_pacing = true;
         skip_breakpoint_once = true;
     }
@@ -65,8 +60,9 @@ Chip8DebugFrame Chip8Debugger::captureFrame(const Chip8CPU& cpu,
                        ? mem.readWord(frame.cpu.pc) : 0;
     frame.mnemonic = disassembleChip8(frame.opcode);
 
-    // Window starts 8 bytes before PC (aligned to even), clamped at 0.
-    std::uint16_t base = (frame.cpu.pc >= 8) ? static_cast<std::uint16_t>(frame.cpu.pc - 8) : 0;
+    // Window centered on PC (aligned to even), clamped at 0.
+    constexpr std::uint16_t kHalf = MEMORY_WINDOW_BYTES / 2;
+    std::uint16_t base = (frame.cpu.pc >= kHalf) ? static_cast<std::uint16_t>(frame.cpu.pc - kHalf) : 0;
     base &= static_cast<std::uint16_t>(~1);
     frame.memory_window_base = base;
     const std::uint16_t end = (base + MEMORY_WINDOW_BYTES < Chip8Memory::MEMORY_SIZE)
@@ -79,6 +75,10 @@ Chip8DebugFrame Chip8Debugger::captureFrame(const Chip8CPU& cpu,
 
     frame.breakpoints = breakpoints;
     frame.pacing = pacing();
+
+    frame.instruction_history.assign(instruction_history_.begin(),
+                                       instruction_history_.end());
+
     return frame;
 }
 
@@ -124,17 +124,24 @@ bool Chip8Debugger::tick(Chip8CPU& cpu, Chip8Memory& mem) {
         return false;
     }
 
-    // Snapshot insn_pc/opcode before execute so trace shows the address that ran.
+    // Snapshot insn_pc/opcode before execute so trace and history show the insn that ran.
+    const std::uint16_t insn_pc = cpu.getPC();
+    const std::uint16_t insn_opcode =
+        (insn_pc + 1 < Chip8Memory::MEMORY_SIZE) ? mem.readWord(insn_pc) : 0;
+
     const bool emit_trace =
         observer != nullptr && trace_enabled(trace_level, TraceLevel::Instructions);
-    const std::uint16_t insn_pc = emit_trace ? cpu.getPC() : 0;
-    const std::uint16_t opcode = emit_trace ? mem.readWord(insn_pc) : 0;
 
     cpu.executeInstruction();
     last_instruction = now;
 
+    if (instruction_history_.size() >= INSTRUCTION_HISTORY_CAPACITY) {
+        instruction_history_.pop_front();
+    }
+    instruction_history_.push_back({insn_pc, insn_opcode});
+
     if (emit_trace) {
-        observer->onInstructionExecuted(insn_pc, opcode);
+        observer->onInstructionExecuted(insn_pc, insn_opcode);
     }
 
     // Step-over done once SP is back at (or below) the recorded depth.
