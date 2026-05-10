@@ -14,7 +14,7 @@ Values must fit in 16 bits (`0`–`65535`).
 
 ## Checked-in sample (`example.txt`)
 
-Contains a single breakpoint at **`0x200`** (program entry). Run with `-b breakpoints/example.txt` and a ROM; stderr should print `BREAK PC=0x0200`. Execution is **paused** at that PC: **Space** steps one instruction; **N** step-over; **Enter** resumes timer-driven run.
+Contains a single breakpoint at **`0x200`** (program entry). Run with `-b breakpoints/example.txt` and a ROM; execution **pauses** at that PC before that instruction runs: **Space** steps one instruction; **N** step-over; **Enter** resumes timer-driven run.
 
 ## CLI
 

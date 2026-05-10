@@ -1,17 +1,12 @@
 #include "debugger.h"
 
 #include "cpu.h"
-#include "debug.h"
 #include "disassemble_chip8.h"
 #include "memory.h"
 
 #include <utility>
 
 Chip8Debugger::Chip8Debugger() = default;
-
-void Chip8Debugger::setObserver(Chip8DebugObserver* o) {
-    observer = o;
-}
 
 void Chip8Debugger::setBreakpoints(std::unordered_set<std::uint16_t> bps) {
     breakpoints = std::move(bps);
@@ -110,9 +105,6 @@ bool Chip8Debugger::tick(Chip8CPU& cpu, Chip8Memory& mem) {
                 auto_pacing = false;
                 // Breakpoint wins over an in-flight step-over.
                 step_over_active = false;
-                if (observer != nullptr) {
-                    observer->onPaused(PauseReason::Breakpoint, pc);
-                }
             }
         }
         if (auto_pacing) {
@@ -124,13 +116,10 @@ bool Chip8Debugger::tick(Chip8CPU& cpu, Chip8Memory& mem) {
         return false;
     }
 
-    // Snapshot insn_pc/opcode before execute so trace and history show the insn that ran.
+    // Snapshot insn_pc/opcode before execute so history shows the insn that ran.
     const std::uint16_t insn_pc = cpu.getPC();
     const std::uint16_t insn_opcode =
         (insn_pc + 1 < Chip8Memory::MEMORY_SIZE) ? mem.readWord(insn_pc) : 0;
-
-    const bool emit_trace =
-        observer != nullptr && trace_enabled(trace_level, TraceLevel::Instructions);
 
     cpu.executeInstruction();
     last_instruction = now;
@@ -140,17 +129,10 @@ bool Chip8Debugger::tick(Chip8CPU& cpu, Chip8Memory& mem) {
     }
     instruction_history_.push_back({insn_pc, insn_opcode});
 
-    if (emit_trace) {
-        observer->onInstructionExecuted(insn_pc, insn_opcode);
-    }
-
     // Step-over done once SP is back at (or below) the recorded depth.
     if (step_over_active && cpu.getSP() <= step_over_target_sp) {
         step_over_active = false;
         auto_pacing = false;
-        if (observer != nullptr) {
-            observer->onPaused(PauseReason::StepOverComplete, cpu.getPC());
-        }
     }
 
     return true;

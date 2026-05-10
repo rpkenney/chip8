@@ -39,7 +39,7 @@ Reconfigure after changing `CMakeLists.txt` by running the first `cmake` line ag
 
 **Run:**
 
-Binary: `build/chip8`. Pass the ROM path (and optional flags such as `--trace`, `-b breakpoints.txt`). **`--trace`** logs each instruction to stderr with a **disassembly** mnemonic. After a **breakpoint** (or if you use **Pause** in the F1 panels), the CPU is **paused**: **Space** runs one instruction, **N** *steps over* (for `CALL`, runs until the matching `RET`; otherwise same as one step), and **Enter** resumes timer-driven execution. Close the window to quit.
+Binary: `build/chip8`. Pass the ROM path (and optional flags such as `-b breakpoints.txt`). After a **breakpoint** (or if you use **Pause** in the F1 panels), the CPU is **paused**: **Space** runs one instruction, **N** *steps over* (for `CALL`, runs until the matching `RET`; otherwise same as one step), and **Enter** resumes timer-driven execution. Close the window to quit.
 
 ```bash
 ./build/chip8 roms/test3

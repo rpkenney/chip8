@@ -16,6 +16,6 @@ bool Chip8Runner::tick() {
         last_frame = now;
         frame_elapsed = true;
     }
-    debugger.tick(cpu, memory);
-    return frame_elapsed;
+    const bool ran_instruction = debugger.tick(cpu, memory);
+    return frame_elapsed || ran_instruction;
 }

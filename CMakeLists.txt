@@ -21,13 +21,15 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(imgui)
 
+set(CURSES_NEED_WIDE TRUE)
+find_package(Curses QUIET)
+
 # Main executable and every translation unit that links into it.
 add_executable(chip8
     src/main.cpp
     src/app/emulator.cpp
     src/app/runner.cpp
     src/debug/breakpoints_loader.cpp
-    src/debug/debug.cpp
     src/debug/debugger.cpp
     src/debug/disassemble_chip8.cpp
     src/machine/framebuffer.cpp
@@ -36,6 +38,13 @@ add_executable(chip8
     src/machine/rom_loader.cpp
     src/frontends/glfw/glfw_frontend.cpp
     src/frontends/glfw/imgui_panels.cpp
+    src/frontends/tui/tui_frontend.cpp
+    src/frontends/tui/tui_support.cpp
+    src/frontends/tui/tui_commands.cpp
+    src/frontends/tui/tui_draw.cpp
+    src/frontends/tui/tui_windows.cpp
+    src/frontends/tui/tui_input.cpp
+    src/frontends/tui/tui_renderer.cpp
     src/machine/cpu.cpp
     src/glad.c
 
@@ -55,11 +64,29 @@ target_include_directories(chip8 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src/machine
     ${CMAKE_CURRENT_SOURCE_DIR}/src/frontends/glfw
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/frontends/tui
     ${CMAKE_CURRENT_SOURCE_DIR}/src/app
     ${CMAKE_CURRENT_SOURCE_DIR}/src/debug
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
 )
 
-# Link GLFW (window, context, input) and GL (OpenGL on Unix; CMake's FindOpenGL module names it GL).
-target_link_libraries(chip8 PRIVATE glfw GL)
+if(CURSES_FOUND)
+    target_sources(chip8 PRIVATE
+        src/frontends/tui/tui_draw.cpp
+        src/frontends/tui/tui_input.cpp
+        src/frontends/tui/tui_windows.cpp
+    )
+    target_compile_definitions(chip8 PRIVATE CHIP8_HAVE_NCURSES=1)
+    target_link_libraries(chip8 PRIVATE ${CURSES_LIBRARIES} glfw GL)
+    if(CURSES_INCLUDE_DIR)
+        target_include_directories(chip8 PRIVATE ${CURSES_INCLUDE_DIR})
+    elseif(CURSES_INCLUDE_PATH)
+        target_include_directories(chip8 PRIVATE ${CURSES_INCLUDE_PATH})
+    endif()
+else()
+    target_compile_definitions(chip8 PRIVATE CHIP8_HAVE_NCURSES=0)
+    target_link_libraries(chip8 PRIVATE glfw GL)
+    message(WARNING "Wide ncurses not found (e.g. libncursesw5-dev). "
+                    "Windowed `chip8` still builds; `chip8 --tui` will fail until ncurses is available.")
+endif()

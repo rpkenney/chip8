@@ -2,7 +2,6 @@
 #define CHIP8_EMULATOR_H
 
 #include "cpu.h"
-#include "debug.h"
 #include "debugger.h"
 #include "framebuffer.h"
 #include "keypad_state.h"
@@ -16,7 +15,6 @@
 struct Chip8EmulatorConfig {
     const char* rom_path = nullptr;
     const char* breakpoints_path = nullptr;
-    bool trace = false;
 };
 
 /// Owns RAM, display buffer, keypad, CPU, debugger, and the 60 Hz runner.
@@ -54,7 +52,6 @@ private:
     Chip8FrameBuffer framebuffer_{};
     Chip8KeypadState keypad_{};
     Chip8CPU cpu_{memory_, framebuffer_, keypad_};
-    TerminalDebugObserver terminal_observer_{};
     Chip8Debugger debugger_{};
     Chip8Runner runner_{cpu_, memory_, debugger_};
 };

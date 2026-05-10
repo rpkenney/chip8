@@ -273,6 +273,7 @@ int run(Chip8Emulator& emu) {
             prev_n = n;
         }
 
+        // Repaint when ~60 Hz timers tick or an instruction ran (see Chip8Runner::tick).
         if (runner.tick()) {
             int fb_w = 0, fb_h = 0;
             window.framebufferSize(fb_w, fb_h);

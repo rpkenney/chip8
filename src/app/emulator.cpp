@@ -27,10 +27,6 @@ bool Chip8Emulator::load(const Chip8EmulatorConfig& cfg, std::string& err) {
         }
     }
 
-    debugger_.setObserver(&terminal_observer_);
-    if (cfg.trace) {
-        debugger_.setTraceLevel(TraceLevel::Instructions);
-    }
     debugger_.setBreakpoints(std::move(breakpoints));
     return true;
 }

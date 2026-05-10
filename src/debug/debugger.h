@@ -1,7 +1,6 @@
 #ifndef CHIP8_DEBUGGER_H
 #define CHIP8_DEBUGGER_H
 
-#include "debug.h"
 #include "debug_frame.h"
 
 #include <chrono>
@@ -12,8 +11,8 @@
 class Chip8CPU;
 class Chip8Memory;
 
-/// Owns debug state and pacing: pause/resume, single-step, step-over, breakpoints,
-/// trace, observer. Frontends call `requestPause` / `requestResume` / `requestStep` /
+/// Owns debug state and pacing: pause/resume, single-step, step-over, breakpoints.
+/// Frontends call `requestPause` / `requestResume` / `requestStep` /
 /// `requestStepOver`; `Chip8Runner` pumps `tick()`.
 ///
 /// Pacing:
@@ -33,9 +32,6 @@ public:
     static constexpr std::size_t INSTRUCTION_HISTORY_CAPACITY = 20;
     Chip8Debugger();
 
-    void setObserver(Chip8DebugObserver* observer);
-    void setTraceLevel(TraceLevel level) { trace_level = level; }
-    TraceLevel traceLevel() const { return trace_level; }
     void setBreakpoints(std::unordered_set<std::uint16_t> bps);
 
     void addBreakpoint(std::uint16_t pc);
@@ -61,9 +57,6 @@ public:
 
 private:
     using clock = std::chrono::high_resolution_clock;
-
-    Chip8DebugObserver* observer = nullptr;
-    TraceLevel trace_level = TraceLevel::Off;
 
     bool auto_pacing = true;
     clock::time_point last_instruction = clock::now();

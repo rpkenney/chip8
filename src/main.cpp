@@ -1,5 +1,6 @@
 #include "emulator.h"
 #include "glfw_frontend.h"
+#include "tui_frontend.h"
 
 #include <cstdio>
 #include <cstring>
@@ -7,16 +8,15 @@
 #include <string>
 
 static void printUsage(const char* argv0) {
-    std::fprintf(stderr,
-                 "usage: %s [--trace] [-b|--breakpoints FILE] ROM\n",
-                 argv0);
+    std::fprintf(stderr, "usage: %s [--tui] [-b|--breakpoints FILE] ROM\n", argv0);
 }
 
 int main(int argc, char* argv[]) {
     Chip8EmulatorConfig cfg;
+    bool use_tui = false;
     for (int i = 1; i < argc; ++i) {
-        if (std::strcmp(argv[i], "--trace") == 0) {
-            cfg.trace = true;
+        if (std::strcmp(argv[i], "--tui") == 0) {
+            use_tui = true;
         } else if (std::strcmp(argv[i], "--breakpoints") == 0 ||
                    std::strcmp(argv[i], "-b") == 0) {
             if (i + 1 >= argc) {
@@ -50,5 +50,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    if (use_tui) {
+        return tui_frontend::run(*emu);
+    }
     return glfw_frontend::run(*emu);
 }

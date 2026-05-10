@@ -9,7 +9,7 @@ class Chip8Debugger;
 
 /// Per-iteration scheduler. Owns the 60 Hz CPU timer cadence and pumps the
 /// debugger; the frontend owns the actual `while` loop and decides when to
-/// render. All debug state (pacing, breakpoints, step-over, observer) lives
+/// render. All debug state (pacing, breakpoints, step-over) lives
 /// in `Chip8Debugger`.
 class Chip8Runner {
 public:
@@ -19,7 +19,9 @@ public:
 
     /// Runs one loop iteration: advances `cpu.timerTick()` if the 60 Hz
     /// boundary has elapsed and pumps the debugger. Returns true when the
-    /// boundary was crossed (the caller renders on true).
+    /// caller should repaint emulated state: the frame boundary was crossed
+    /// (timers / 60 Hz) or the debugger executed an instruction (display, PC,
+    /// history, etc. may have changed).
     bool tick();
 
 private:
