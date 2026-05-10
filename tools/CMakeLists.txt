@@ -8,19 +8,53 @@ add_executable(chip8c
     compiler/src/parser.cpp
     compiler/src/codegen.cpp
     compiler/src/register_allocator.cpp
+    compiler/src/opcode_mapper.cpp
 )
 
 target_include_directories(chip8c PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
 )
 
-# Test executable
+# Test executables
 add_executable(test_register_allocator
     compiler/test/test_register_allocator.cpp
     compiler/src/register_allocator.cpp
 )
 
 target_include_directories(test_register_allocator PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
+)
+
+add_executable(test_opcode_mapper
+    compiler/test/test_opcode_mapper.cpp
+    compiler/src/opcode_mapper.cpp
+)
+
+target_include_directories(test_opcode_mapper PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
+)
+
+add_executable(test_symbol_table
+    compiler/test/test_symbol_table.cpp
+    compiler/src/codegen.cpp
+    compiler/src/ast.cpp
+    compiler/src/register_allocator.cpp
+    compiler/src/opcode_mapper.cpp
+)
+
+target_include_directories(test_symbol_table PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
+)
+
+add_executable(test_label_generator
+    compiler/test/test_label_generator.cpp
+    compiler/src/codegen.cpp
+    compiler/src/ast.cpp
+    compiler/src/register_allocator.cpp
+    compiler/src/opcode_mapper.cpp
+)
+
+target_include_directories(test_label_generator PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
 )
 

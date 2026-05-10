@@ -24,7 +24,7 @@ bool Chip8Runner::tick() {
         const int speed_hz = debugger.getInstructionSpeedHz();
         const int instructions_per_frame = std::max(1, speed_hz / 60);
         for (int i = 0; i < instructions_per_frame; ++i) {
-            if (!debugger.executeOne(cpu, memory)) {
+            if (!debugger.tick(cpu, memory)) {
                 break;
             }
         }

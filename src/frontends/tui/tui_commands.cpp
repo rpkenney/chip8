@@ -37,7 +37,6 @@ void dispatchTuiCommand(const std::string& line, std::vector<std::string>& log, 
                            "  pause             - Pause execution\n"
                            "  cont              - Continue/resume execution\n"
                            "  step              - Execute one instruction\n"
-                           "  next, n           - Step over (run until subroutine returns)\n"
                            "  speed [hz]        - Show or set CPU speed (1-5000 Hz)\n"
                            "  b list, b ls      - List all breakpoints\n"
                            "  b add <addr>      - Add breakpoint at address\n"
@@ -89,17 +88,6 @@ void dispatchTuiCommand(const std::string& line, std::vector<std::string>& log, 
     if (cmd == "step") {
         debugger.requestStep();
         appendLogLine(log, "(step)");
-        return;
-    }
-    if (cmd == "next" || cmd == "n") {
-        std::string rest;
-        std::getline(iss, rest);
-        if (!trimCopy(rest).empty()) {
-            appendLogLine(log, "next (or n): no arguments");
-            return;
-        }
-        debugger.requestStepOver();
-        appendLogLine(log, "(step over)");
         return;
     }
     if (cmd == "regs") {

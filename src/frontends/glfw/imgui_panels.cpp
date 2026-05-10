@@ -155,8 +155,6 @@ void renderExecution(Chip8Debugger& debugger) {
     if (paused) {
         if (ImGui::Button("Step (Space)")) debugger.requestStep();
         ImGui::SameLine();
-        if (ImGui::Button("Step Over (N)")) debugger.requestStepOver();
-        ImGui::SameLine();
         if (ImGui::Button("Resume (Enter)")) debugger.requestResume();
     } else {
         if (ImGui::Button("Pause")) debugger.requestPause();

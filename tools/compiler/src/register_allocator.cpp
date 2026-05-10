@@ -93,6 +93,21 @@ uint16_t RegisterAllocator::getUserVariableSpillAddress(const std::string& var_n
     return it->second;
 }
 
+bool RegisterAllocator::isTemporaryInRegister(uint8_t reg) const {
+    // A register is a temporary if it's in available or has an active temp
+    if (available_temp_registers_.count(reg) > 0) {
+        return false;  // Not active (available for allocation)
+    }
+    
+    // Check if it's an active temporary
+    auto it = active_temps_.find(reg);
+    if (it != active_temps_.end()) {
+        return it->second == 0;  // 0 means in register, not spilled
+    }
+    
+    return false;  // Not a temporary
+}
+
 int RegisterAllocator::getNumUserVariables() const {
     return user_variables_reg_.size() + user_variables_spill_.size();
 }

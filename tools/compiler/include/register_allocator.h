@@ -29,6 +29,9 @@ public:
     uint8_t getUserVariableRegister(const std::string& var_name) const;
     uint16_t getUserVariableSpillAddress(const std::string& var_name) const;
     
+    // Check if a register holds an active temporary
+    bool isTemporaryInRegister(uint8_t reg) const;
+    
     // Convenience methods (shorter names for codegen)
     bool isInRegister(const std::string& var_name) const {
         return isUserVariableInRegister(var_name);

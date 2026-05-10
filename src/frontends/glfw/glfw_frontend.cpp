@@ -237,7 +237,6 @@ int run(Chip8Emulator& emu) {
     bool prev_f1 = false;
     bool prev_space = false;
     bool prev_enter = false;
-    bool prev_n = false;
 
     while (!window.shouldClose()) {
         window.pollEvents();
@@ -256,21 +255,18 @@ int run(Chip8Emulator& emu) {
 
         if (ui_eats_input) {
             kp.clear();
-            prev_space = prev_enter = prev_n = false;
+            prev_space = prev_enter = false;
         } else {
             syncKeypadFromGlfw(win, kp);
 
             const bool space = glfwGetKey(win, GLFW_KEY_SPACE) == GLFW_PRESS;
             const bool enter = glfwGetKey(win, GLFW_KEY_ENTER) == GLFW_PRESS ||
                                glfwGetKey(win, GLFW_KEY_KP_ENTER) == GLFW_PRESS;
-            const bool n = glfwGetKey(win, GLFW_KEY_N) == GLFW_PRESS;
 
             if (space && !prev_space) debugger.requestStep();
             if (enter && !prev_enter) debugger.requestResume();
-            if (n && !prev_n) debugger.requestStepOver();
             prev_space = space;
             prev_enter = enter;
-            prev_n = n;
         }
 
         // Repaint when ~60 Hz timers tick or an instruction ran (see Chip8Runner::tick).
