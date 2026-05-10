@@ -11,6 +11,9 @@ set(CMAKE_C_STANDARD 17)
 # Emit compile_commands.json in the build dir (useful for clangd and other tools).
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Option to build compiler and decompiler tools
+option(ENABLE_TOOLS "Build chip8c (compiler) and chip8d (decompiler)" OFF)
+
 # Dear ImGui: vendored via FetchContent. ImGui ships no CMakeLists.txt, so we
 # pull the sources and add them to the chip8 target directly.
 include(FetchContent)
@@ -91,3 +94,9 @@ else()
     message(WARNING "Wide ncurses not found (e.g. libncursesw5-dev). "
                     "Windowed `chip8` still builds; `chip8 --tui` will fail until ncurses is available.")
 endif()
+
+# Include tools subdirectory if enabled
+if(ENABLE_TOOLS)
+    add_subdirectory(tools)
+endif()
+

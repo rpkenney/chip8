@@ -1,0 +1,27 @@
+// Simple test program
+uint8 x, y;
+uint8 counter = 0;
+
+sprite ball {
+    0xFF,
+    0xFF,
+}
+
+void main() {
+    clear_screen();
+    
+    x = 32;
+    y = 16;
+    
+    while (counter < 100) {
+        draw_sprite(x, y, ball);
+        
+        x = x + 1;
+        
+        if (x >= 60) {
+            x = 0;
+        }
+        
+        counter = counter + 1;
+    }
+}

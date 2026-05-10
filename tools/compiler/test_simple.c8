@@ -1,0 +1,5 @@
+uint8 x = 5;
+
+void main() {
+    x = x + 1;
+}
