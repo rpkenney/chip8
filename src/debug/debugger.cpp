@@ -3,6 +3,7 @@
 #include "cpu.h"
 #include "disassemble_chip8.h"
 #include "memory.h"
+#include "opcode_descriptions.h"
 
 #include <utility>
 
@@ -54,6 +55,7 @@ Chip8DebugFrame Chip8Debugger::captureFrame(const Chip8CPU& cpu,
     frame.opcode = (frame.cpu.pc + 1 < Chip8Memory::MEMORY_SIZE)
                        ? mem.readWord(frame.cpu.pc) : 0;
     frame.mnemonic = disassembleChip8(frame.opcode);
+    frame.description = getOpcodeDescription(frame.opcode);
 
     // Window centered on PC (aligned to even), clamped at 0.
     constexpr std::uint16_t kHalf = MEMORY_WINDOW_BYTES / 2;

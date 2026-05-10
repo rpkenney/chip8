@@ -134,6 +134,12 @@ std::string disassembleChip8(std::uint16_t opcode) {
             }
         case 0xF000:
             switch (opcode & 0x00FF) {
+                case 0x0007:
+                    appendf(buf, cap, len, "LD V%X,DT", x);
+                    return buf;
+                case 0x000A:
+                    appendf(buf, cap, len, "LD V%X,K", x);
+                    return buf;
                 case 0x0015:
                     appendf(buf, cap, len, "LD DT,V%X", x);
                     return buf;

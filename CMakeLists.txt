@@ -32,6 +32,7 @@ add_executable(chip8
     src/debug/breakpoints_loader.cpp
     src/debug/debugger.cpp
     src/debug/disassemble_chip8.cpp
+    src/debug/opcode_descriptions.cpp
     src/machine/framebuffer.cpp
     src/machine/keypad_state.cpp
     src/machine/memory.cpp

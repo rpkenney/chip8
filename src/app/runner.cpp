@@ -12,7 +12,11 @@ bool Chip8Runner::tick() {
     bool frame_elapsed = false;
     const auto now = std::chrono::high_resolution_clock::now();
     if (now - last_frame > std::chrono::milliseconds(FRAME_INTERVAL_MS)) {
-        cpu.timerTick();
+        // Only advance timers when the debugger is in auto-pacing mode (i.e., running).
+        // When paused, timers should not decrement to maintain realistic behavior.
+        if (debugger.pacing() == PausePacing::Auto) {
+            cpu.timerTick();
+        }
         last_frame = now;
         frame_elapsed = true;
     }

@@ -26,6 +26,8 @@ struct Chip8DebugFrame {
     std::uint16_t opcode = 0;
     /// `disassembleChip8(opcode)`.
     std::string mnemonic;
+    /// Plain-English description of what the opcode does.
+    std::string description;
     /// Up to `Chip8Debugger::INSTRUCTION_HISTORY_CAPACITY` entries, oldest first.
     std::vector<Chip8InstructionHistoryEntry> instruction_history;
     /// First address covered by `memory_window`; aligned to an even byte.

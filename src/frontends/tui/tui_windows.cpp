@@ -132,7 +132,7 @@ bool waitForUsableTerminal(TuiWindows& ui) {
     for (;;) {
         werase(stdscr);
         printw("Terminal too small.\n"
-               "Resize the window, or press q to quit.\n");
+               "Resize the window.\n");
         refresh();
         const int ch = wgetch(stdscr);
         if (ch == 'q' || ch == 'Q') {

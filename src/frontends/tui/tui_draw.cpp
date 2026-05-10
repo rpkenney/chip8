@@ -22,18 +22,38 @@ void drawAllPanels(const TuiFrame& frame, const Chip8FrameBuffer& fb,
         WINDOW* w = frame.game;
         werase(w);
         const std::uint8_t* px = fb.pixels();
-        for (int row = 0; row < kHalfRows; ++row) {
-            for (int col = 0; col < kFbW; ++col) {
-                const bool top = px[static_cast<std::size_t>((row * 2) * kFbW + col)] != 0;
-                const bool bot = px[static_cast<std::size_t>((row * 2 + 1) * kFbW + col)] != 0;
-                wchar_t wc[2] = {L' ', 0};
-                if (top && bot)       wc[0] = L'\u2588';
-                else if (top)         wc[0] = L'\u2580';
-                else if (bot)         wc[0] = L'\u2584';
-                const bool lit = top || bot;
-                if (lit && colors) wattron(w, COLOR_PAIR(kPairLit));
-                mvwaddnwstr(w, row, col, wc, 1);
-                if (lit && colors) wattroff(w, COLOR_PAIR(kPairLit));
+        const bool colors = hasColors();
+
+        if (frame.scale == 1) {
+            // Scale 1: Each terminal row encodes 2 CHIP-8 rows via half-block glyphs
+            for (int row = 0; row < kHalfRows; ++row) {
+                for (int col = 0; col < kFbW; ++col) {
+                    const bool top = px[static_cast<std::size_t>((row * 2) * kFbW + col)] != 0;
+                    const bool bot = px[static_cast<std::size_t>((row * 2 + 1) * kFbW + col)] != 0;
+                    wchar_t wc[2] = {L' ', 0};
+                    if (top && bot)       wc[0] = L'\u2588';  // Full block
+                    else if (top)         wc[0] = L'\u2580';  // Upper half
+                    else if (bot)         wc[0] = L'\u2584';  // Lower half
+                    const bool lit = top || bot;
+                    if (lit && colors) wattron(w, COLOR_PAIR(kPairLit));
+                    mvwaddnwstr(w, row, col, wc, 1);
+                    if (lit && colors) wattroff(w, COLOR_PAIR(kPairLit));
+                }
+            }
+        } else {
+            // Scale > 1: Each CHIP-8 pixel becomes scale×scale terminal cells using full blocks
+            const int win_rows = kHalfRows * frame.scale;
+            const int win_cols = kFbW * frame.scale;
+            for (int ty = 0; ty < win_rows; ++ty) {
+                const int chip8_row = ty * kFbH / win_rows;  // Map terminal row to CHIP-8 row
+                for (int tx = 0; tx < win_cols; ++tx) {
+                    const int chip8_col = tx / frame.scale;
+                    const bool on = px[static_cast<std::size_t>(chip8_row * kFbW + chip8_col)] != 0;
+                    wchar_t wc[2] = {on ? L'\u2588' : L' ', 0};  // Full block or space
+                    if (on && colors) wattron(w, COLOR_PAIR(kPairLit));
+                    mvwaddnwstr(w, ty, tx, wc, 1);
+                    if (on && colors) wattroff(w, COLOR_PAIR(kPairLit));
+                }
             }
         }
     }

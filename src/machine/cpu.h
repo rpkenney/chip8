@@ -34,6 +34,11 @@ public:
     /// pin the sequence.
     void setSeed(std::uint32_t seed) { rng.seed(seed); }
 
+    /// Debugging: set the delay timer directly.
+    void setDelayTimer(std::uint8_t value) { dt = value; }
+    /// Debugging: set the sound timer directly.
+    void setSoundTimer(std::uint8_t value) { st = value; }
+
     void executeInstruction();
     void timerTick();
 

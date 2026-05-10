@@ -101,18 +101,12 @@ int run(Chip8Emulator& emulator) {
                     continue;
                 }
                 if (!layout_ok) {
-                    if (ch == 'q' || ch == 'Q') {
-                        quit = true;
-                    }
                     skip_chip8[i] = true;
                     continue;
                 }
                 const bool running = debugger.pacing() == PausePacing::Auto;
                 if (running) {
-                    if (ch == 'q' || ch == 'Q') {
-                        quit = true;
-                        skip_chip8[i] = true;
-                    } else if (ch == KEY_F(1)) {
+                    if (ch == KEY_F(1)) {
                         debugger.requestPause();
                         skip_chip8[i] = true;
                     }
@@ -127,7 +121,7 @@ int run(Chip8Emulator& emulator) {
             if (!layout_ok) {
                 werase(stdscr);
                 printw("Terminal too small.\n"
-                       "Resize the window, or press q to quit.\n");
+                       "Resize the window.\n");
                 refresh();
                 runner.tick();
                 continue;

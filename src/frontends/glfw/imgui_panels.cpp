@@ -21,7 +21,7 @@ namespace {
 constexpr float kRightFraction = 0.38f;
 constexpr float kRightTopFraction = 0.55f;
 
-void renderRegisters(const Chip8DebugFrame& frame) {
+void renderRegisters(const Chip8DebugFrame& frame, Chip8CPU& cpu) {
     static Chip8CpuSnapshot prev_regs{};
     static bool have_prev_regs = false;
 
@@ -45,10 +45,33 @@ void renderRegisters(const Chip8DebugFrame& frame) {
     have_prev_regs = true;
     ImGui::Separator();
     ImGui::Text("PC = 0x%04X    I = 0x%03X", frame.cpu.pc, frame.cpu.I);
-    ImGui::Text("SP = %u        DT = %u    ST = %u",
-                frame.cpu.sp, frame.cpu.dt, frame.cpu.st);
+    ImGui::Text("SP = %u", frame.cpu.sp);
+    ImGui::SameLine();
+    ImGui::TextDisabled("DT = %u", frame.cpu.dt);
+    ImGui::SameLine();
+    ImGui::TextDisabled("ST = %u", frame.cpu.st);
+
+    // Debug controls for timers
+    ImGui::Separator();
+    ImGui::TextDisabled("Debug: Edit Timers");
+    static char dt_buf[4] = "0";
+    static char st_buf[4] = "0";
+    ImGui::SetNextItemWidth(60.0f);
+    ImGui::InputText("##dt_input", dt_buf, sizeof(dt_buf), ImGuiInputTextFlags_CharsDecimal);
+    ImGui::SameLine();
+    if (ImGui::Button("Set DT")) {
+        cpu.setDelayTimer(static_cast<std::uint8_t>(std::atoi(dt_buf)));
+    }
+    ImGui::SetNextItemWidth(60.0f);
+    ImGui::InputText("##st_input", st_buf, sizeof(st_buf), ImGuiInputTextFlags_CharsDecimal);
+    ImGui::SameLine();
+    if (ImGui::Button("Set ST")) {
+        cpu.setSoundTimer(static_cast<std::uint8_t>(std::atoi(st_buf)));
+    }
+
     ImGui::Separator();
     ImGui::Text("Instruction: 0x%04X  %s", frame.opcode, frame.mnemonic.c_str());
+    ImGui::TextWrapped("%s", frame.description.c_str());
     ImGui::Separator();
     ImGui::Text("Stack:");
     for (int i = 0; i < frame.cpu.sp; ++i) {
@@ -183,7 +206,7 @@ void renderExecution(Chip8Debugger& debugger) {
 
 }  // namespace
 
-CentralRect build(Chip8Debugger& debugger, const Chip8CPU& cpu, const Chip8Memory& memory) {
+CentralRect build(Chip8Debugger& debugger, Chip8CPU& cpu, const Chip8Memory& memory) {
     const Chip8DebugFrame frame = debugger.captureFrame(cpu, memory);
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -243,7 +266,7 @@ CentralRect build(Chip8Debugger& debugger, const Chip8CPU& cpu, const Chip8Memor
         ImGui::BeginChild("##right_top", ImVec2(0, top_h), ImGuiChildFlags_Border);
         if (ImGui::BeginTabBar("##right_top_tabs")) {
             if (ImGui::BeginTabItem("Registers")) {
-                renderRegisters(frame);
+                renderRegisters(frame, cpu);
                 ImGui::EndTabItem();
             }
             if (ImGui::BeginTabItem("Hexdump")) {

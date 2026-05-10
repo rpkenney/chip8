@@ -165,7 +165,8 @@ void Chip8CPU::executeInstruction() {
             constexpr std::size_t kMaxSpriteHeight = 15;
             uint8_t sprite[kMaxSpriteHeight];
             memory.readBytes(I, sprite, n);
-            display.drawSprite(reg[x], reg[y], sprite, n);
+            const bool collision = display.drawSprite(reg[x], reg[y], sprite, n);
+            reg[0xF] = collision ? 1 : 0;
             break;
         }
         case 0xE000:
@@ -186,6 +187,25 @@ void Chip8CPU::executeInstruction() {
             break;
         case 0xF000:
             switch (opcode & 0x00FF) {
+                case 0x0007:
+                    reg[x] = dt;
+                    break;
+                case 0x000A: {
+                    // Wait for key press: check all keys 0-F
+                    bool key_found = false;
+                    for (int key = 0; key < 16; ++key) {
+                        if (keypad.isKeyPressed(key)) {
+                            reg[x] = static_cast<uint8_t>(key);
+                            key_found = true;
+                            break;
+                        }
+                    }
+                    // If no key pressed, rewind PC so this instruction executes again
+                    if (!key_found) {
+                        pc -= 2;
+                    }
+                    break;
+                }
                 case 0x0015:
                     dt = reg[x];
                     break;

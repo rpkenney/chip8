@@ -23,7 +23,7 @@ struct CentralRect {
 /// Returns the central node's rect so the caller can size the GL render
 /// of the CHIP-8 framebuffer to it.
 CentralRect build(Chip8Debugger& debugger,
-                  const Chip8CPU& cpu,
+                  Chip8CPU& cpu,
                   const Chip8Memory& memory);
 
 }  // namespace imgui_panels
