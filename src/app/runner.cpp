@@ -19,7 +19,15 @@ bool Chip8Runner::tick() {
         }
         last_frame = now;
         frame_elapsed = true;
+        
+        // Execute multiple instructions per frame based on speed.
+        const int speed_hz = debugger.getInstructionSpeedHz();
+        const int instructions_per_frame = std::max(1, speed_hz / 60);
+        for (int i = 0; i < instructions_per_frame; ++i) {
+            if (!debugger.executeOne(cpu, memory)) {
+                break;
+            }
+        }
     }
-    const bool ran_instruction = debugger.tick(cpu, memory);
-    return frame_elapsed || ran_instruction;
+    return frame_elapsed;
 }

@@ -29,13 +29,28 @@ void dispatchTuiCommand(const std::string& line, std::vector<std::string>& log, 
 
     if (cmd == "h" || cmd == "?") {
         appendLogMultiline(log,
-                           "commands: h ? | regs | mem <addr> [n] | hist [n] | pause | cont | step | "
-                           "next|n | q quit | less\n"
-                           "breakpoints: b list | b add <addr> | b del <addr>\n"
-                           "less: scroll log (PgUp/PgDn Home/End j/k g/G, q or Esc exit)\n"
-                           "addr: hex 0x.. or decimal. empty line+Enter = resume. space = step when "
-                           "line empty.\n"
-                           "while running: F1 = pause (p is for typing / CHIP-8).");
+                           "COMMANDS:\n"
+                           "  h, ?              - Show this help\n"
+                           "  regs              - Show all registers, PC, I, SP, DT, ST\n"
+                           "  mem <addr> [n]    - Dump memory at addr for n bytes (default 16, max 256)\n"
+                           "  hist [n]          - Show last n instructions (default 20, max 100)\n"
+                           "  pause             - Pause execution\n"
+                           "  cont              - Continue/resume execution\n"
+                           "  step              - Execute one instruction\n"
+                           "  next, n           - Step over (run until subroutine returns)\n"
+                           "  speed [hz]        - Show or set CPU speed (1-5000 Hz)\n"
+                           "  b list, b ls      - List all breakpoints\n"
+                           "  b add <addr>      - Add breakpoint at address\n"
+                           "  b del <addr>      - Remove breakpoint at address\n"
+                           "  less, page        - View log in pager (PgUp/PgDn j/k g/G q/Esc)\n"
+                           "  q, quit           - Exit emulator\n"
+                           "SHORTCUTS:\n"
+                           "  Empty line+Enter  - Resume execution\n"
+                           "  Space (empty)     - Step one instruction\n"
+                           "  P key (running)   - Pause\n"
+                           "NOTES:\n"
+                           "  addr: hex (0x200) or decimal (512)\n"
+                           "  speed: default 500 Hz, 1000 Hz = ~17 instr/frame at 60 FPS");
         return;
     }
     if (cmd == "q" || cmd == "quit") {
@@ -250,6 +265,32 @@ void dispatchTuiCommand(const std::string& line, std::vector<std::string>& log, 
             return;
         }
         appendLogLine(log, "b: b list | b add <addr> | b del <addr>");
+        return;
+    }
+
+    if (cmd == "speed") {
+        std::string hz_str;
+        iss >> hz_str;
+        if (hz_str.empty()) {
+            int hz = debugger.getInstructionSpeedHz();
+            char buf[50];
+            std::snprintf(buf, sizeof(buf), "speed: %d Hz", hz);
+            appendLogLine(log, buf);
+            return;
+        }
+        try {
+            int hz = std::stoi(hz_str);
+            if (hz <= 0) {
+                appendLogLine(log, "speed: must be > 0 Hz");
+                return;
+            }
+            debugger.setInstructionSpeedHz(hz);
+            char buf[50];
+            std::snprintf(buf, sizeof(buf), "speed set to %d Hz", hz);
+            appendLogLine(log, buf);
+        } catch (...) {
+            appendLogLine(log, "speed: invalid Hz value");
+        }
         return;
     }
 

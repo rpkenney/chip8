@@ -79,6 +79,41 @@ Chip8DebugFrame Chip8Debugger::captureFrame(const Chip8CPU& cpu,
     return frame;
 }
 
+bool Chip8Debugger::executeOne(Chip8CPU& cpu, Chip8Memory& mem) {
+    if (!auto_pacing) {
+        return false;
+    }
+    const std::uint16_t pc = cpu.getPC();
+    if (!breakpoints.empty() && breakpoints.count(pc) != 0) {
+        if (skip_breakpoint_once) {
+            skip_breakpoint_once = false;
+        } else {
+            auto_pacing = false;
+            step_over_active = false;
+            return false;
+        }
+    }
+
+    const std::uint16_t insn_pc = cpu.getPC();
+    const std::uint16_t insn_opcode =
+        (insn_pc + 1 < Chip8Memory::MEMORY_SIZE) ? mem.readWord(insn_pc) : 0;
+
+    cpu.executeInstruction();
+    last_instruction = clock::now();
+
+    if (instruction_history_.size() >= INSTRUCTION_HISTORY_CAPACITY) {
+        instruction_history_.pop_front();
+    }
+    instruction_history_.push_back({insn_pc, insn_opcode});
+
+    if (step_over_active && cpu.getSP() <= step_over_target_sp) {
+        step_over_active = false;
+        auto_pacing = false;
+    }
+
+    return true;
+}
+
 bool Chip8Debugger::tick(Chip8CPU& cpu, Chip8Memory& mem) {
     // Materialise a pending step-over now that we can read SP. We flip to auto
     // pacing internally and let the auto path drive execution until SP returns.
@@ -98,7 +133,7 @@ bool Chip8Debugger::tick(Chip8CPU& cpu, Chip8Memory& mem) {
             step_request = false;
             do_execute = true;
         }
-    } else if (now - last_instruction >= std::chrono::milliseconds(INSTRUCTION_INTERVAL_MS)) {
+    } else if (now - last_instruction >= std::chrono::milliseconds(std::max(1, 1000 / instruction_speed_hz))) {
         const std::uint16_t pc = cpu.getPC();
         if (!breakpoints.empty() && breakpoints.count(pc) != 0) {
             if (skip_breakpoint_once) {

@@ -165,6 +165,15 @@ void renderExecution(Chip8Debugger& debugger) {
     ImGui::TextDisabled("F1: panels");
 
     ImGui::Separator();
+    ImGui::TextDisabled("Speed Control");
+    static int speed_hz = 500;
+    ImGui::SliderInt("Speed (Hz)##speed", &speed_hz, 1, 5000, "%d Hz");
+    if (ImGui::IsItemDeactivatedAfterEdit()) {
+        debugger.setInstructionSpeedHz(speed_hz);
+    }
+    ImGui::Text("Current: %d Hz", debugger.getInstructionSpeedHz());
+
+    ImGui::Separator();
     static std::uint16_t breakpoint_addr = 0x200;
     ImGui::SetNextItemWidth(72);
     ImGui::InputScalar("Addr", ImGuiDataType_U16, &breakpoint_addr, nullptr, nullptr,

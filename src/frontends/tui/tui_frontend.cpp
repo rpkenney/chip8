@@ -106,7 +106,7 @@ int run(Chip8Emulator& emulator) {
                 }
                 const bool running = debugger.pacing() == PausePacing::Auto;
                 if (running) {
-                    if (ch == KEY_F(1)) {
+                    if (ch == 'p' || ch == 'P') {
                         debugger.requestPause();
                         skip_chip8[i] = true;
                     }

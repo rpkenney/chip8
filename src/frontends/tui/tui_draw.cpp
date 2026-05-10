@@ -45,9 +45,10 @@ void drawAllPanels(const TuiFrame& frame, const Chip8FrameBuffer& fb,
             const int win_rows = kHalfRows * frame.scale;
             const int win_cols = kFbW * frame.scale;
             for (int ty = 0; ty < win_rows; ++ty) {
-                const int chip8_row = ty * kFbH / win_rows;  // Map terminal row to CHIP-8 row
+                // Map terminal row to CHIP-8 row, evenly distributed
+                const int chip8_row = (ty * kFbH + win_rows / 2) / win_rows;
                 for (int tx = 0; tx < win_cols; ++tx) {
-                    const int chip8_col = tx / frame.scale;
+                    const int chip8_col = (tx * kFbW + win_cols / 2) / win_cols;
                     const bool on = px[static_cast<std::size_t>(chip8_row * kFbW + chip8_col)] != 0;
                     wchar_t wc[2] = {on ? L'\u2588' : L' ', 0};  // Full block or space
                     if (on && colors) wattron(w, COLOR_PAIR(kPairLit));
@@ -118,7 +119,7 @@ void drawAllPanels(const TuiFrame& frame, const Chip8FrameBuffer& fb,
 
         if (!frame.paused) {
             if (cols > 4) {
-                const char* msg = "[running] F1=pause | keys -> CHIP-8";
+                const char* msg = "[running] P=pause | keys -> CHIP-8";
                 std::string clip(msg);
                 if (static_cast<int>(clip.size()) > cols - 1) {
                     clip.resize(static_cast<std::size_t>(cols - 1));
