@@ -55,7 +55,9 @@ struct FunctionCall : public Expression {
 };
 
 // Statements
-struct Statement : public ASTNode {};
+struct Statement : public ASTNode {
+    int line = 0;  // 1-based source line from lexer (for listings)
+};
 
 struct ExpressionStatement : public Statement {
     std::shared_ptr<Expression> expr;

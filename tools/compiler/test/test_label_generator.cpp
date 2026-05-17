@@ -1,4 +1,4 @@
-#include "codegen.h"
+#include <chip8/compiler/codegen.h>
 #include <iostream>
 #include <cassert>
 #include <sstream>

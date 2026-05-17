@@ -1,7 +1,7 @@
 #ifndef CHIP8_KEYPAD_STATE_H
 #define CHIP8_KEYPAD_STATE_H
 
-#include "keypad.h"
+#include <chip8/machine/keypad.h>
 
 #include <array>
 

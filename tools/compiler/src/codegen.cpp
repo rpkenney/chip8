@@ -1,7 +1,8 @@
-#include "codegen.h"
+#include <chip8/compiler/codegen.h>
 #include <sstream>
 #include <stdexcept>
 #include <set>
+#include <iomanip>
 
 // Forward declarations for helper functions
 static uint16_t parseLiteral(const std::string& lit);
@@ -194,7 +195,7 @@ void CodeGenerator::emitInstruction(std::vector<Instruction>& instructions,
                                    const std::string& mnemonic,
                                    const std::vector<std::string>& operands,
                                    const std::string& comment) {
-    instructions.push_back(Instruction(mnemonic, operands, 0, comment));
+    instructions.push_back(Instruction(mnemonic, operands, current_source_line_, comment));
 }
 
 uint8_t CodeGenerator::synthesizeComparison(const std::string& op, uint8_t left_reg, uint8_t right_reg,
@@ -486,6 +487,9 @@ void CodeGenerator::generateStatementAssembly(const std::shared_ptr<Statement>& 
                                              std::vector<Instruction>& instructions) {
     if (!stmt) return;
 
+    const int saved_line = current_source_line_;
+    current_source_line_ = stmt->line;
+
     if (auto expr_stmt = std::dynamic_pointer_cast<ExpressionStatement>(stmt)) {
         uint8_t result = generateExpressionAssembly(expr_stmt->expr, instructions);
         if (result != 0xFF && reg_allocator_.isTemporaryInRegister(result)) {
@@ -602,6 +606,8 @@ void CodeGenerator::generateStatementAssembly(const std::shared_ptr<Statement>& 
         // Emit RET instruction
         emitInstruction(instructions, "RET", {}, "Return from function");
     }
+
+    current_source_line_ = saved_line;
 }
 
 uint8_t CodeGenerator::generateExpressionAssembly(const std::shared_ptr<Expression>& expr,
@@ -1004,6 +1010,139 @@ bool CodeGenerator::encodeInstruction(const Instruction& instr, uint16_t& out_op
     }
 }
 
+namespace {
+
+std::string trimListingSource(const std::string& s) {
+    size_t start = 0;
+    while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) {
+        start++;
+    }
+    size_t end = s.size();
+    while (end > start && (s[end - 1] == ' ' || s[end - 1] == '\t' || s[end - 1] == '\r')) {
+        end--;
+    }
+    std::string out = s.substr(start, end - start);
+    if (out.size() > 72) {
+        out.resize(72);
+    }
+    return out;
+}
+
+std::string formatListingAddr(uint16_t a) {
+    std::ostringstream o;
+    o << "0x" << std::uppercase << std::hex << std::setw(4) << std::setfill('0') << a;
+    return o.str();
+}
+
+std::string formatOpcodeBytes(uint16_t opc) {
+    std::ostringstream o;
+    o << std::uppercase << std::hex << std::setw(2) << std::setfill('0') << ((opc >> 8) & 0xFF);
+    o << ' ';
+    o << std::setw(2) << (opc & 0xFF);
+    return o.str();
+}
+
+/// Text stored in the ROM debug map at each PC: prefer source line, else IR.
+std::string debugMapTextForInstruction(const Instruction& instr,
+                                       const std::vector<std::string>& source_lines) {
+    if (!source_lines.empty() && instr.source_line > 0 &&
+        static_cast<std::size_t>(instr.source_line) <= source_lines.size()) {
+        std::string s = trimListingSource(source_lines[static_cast<std::size_t>(instr.source_line) - 1]);
+        if (!s.empty()) {
+            return s;
+        }
+    }
+    return instr.toString();
+}
+
+} // namespace
+
+void CodeGenerator::writeListing(const std::vector<Instruction>& instructions,
+                                 const std::vector<std::string>& source_lines,
+                                 std::ostream& out) const {
+    const std::ios_base::fmtflags saved_flags = out.flags();
+
+    auto sourceFor = [&](const Instruction& instr) -> std::string {
+        if (source_lines.empty() || instr.source_line <= 0 ||
+            static_cast<size_t>(instr.source_line) > source_lines.size()) {
+            return {};
+        }
+        return trimListingSource(source_lines[static_cast<size_t>(instr.source_line) - 1]);
+    };
+
+    uint16_t addr = 0x200;
+    for (const auto& instr : instructions) {
+        if (instr.mnemonic == "LABEL") {
+            out << formatListingAddr(addr) << "   --            " << std::left << std::setw(36)
+                << std::setfill(' ') << instr.toString() << std::right << std::setfill(' ') << ' '
+                << sourceFor(instr) << '\n';
+            continue;
+        }
+        if (instr.mnemonic == "END") {
+            out << formatListingAddr(addr) << "   --            " << std::left << std::setw(36)
+                << instr.toString() << std::right << ' ' << sourceFor(instr) << '\n';
+            continue;
+        }
+
+        uint16_t opc = 0;
+        if (!encodeInstruction(instr, opc)) {
+            throw std::runtime_error("listing: cannot encode " + instr.toString());
+        }
+        out << formatListingAddr(addr) << "   " << formatOpcodeBytes(opc) << "      ";
+
+        {
+            std::ostringstream mn;
+            mn << std::left << std::setw(36) << std::setfill(' ') << instr.toString();
+            out << mn.str();
+        }
+        out << ' ' << sourceFor(instr) << '\n';
+        addr += 2;
+    }
+
+    if (!sprite_alloc_.sprites.empty()) {
+        out << "; ROM data (sprites)\n";
+        for (const auto& sprite : sprite_alloc_.sprites) {
+            for (const auto& byte_str : sprite.bytes) {
+                uint8_t b = static_cast<uint8_t>(parseLiteral(byte_str) & 0xFF);
+                std::ostringstream db;
+                db << "db 0x" << std::uppercase << std::hex << std::setw(2) << std::setfill('0')
+                   << static_cast<int>(b);
+                std::string dbstr = db.str();
+                out << formatListingAddr(addr) << "   " << std::setw(5) << std::setfill(' ')
+                    << std::left << std::setw(5) << ""
+                    << " " << std::setw(36) << std::setfill(' ') << std::left << dbstr
+                    << "; sprite " << sprite.name << '\n';
+                addr += 1;
+            }
+        }
+    }
+
+    out.flags(saved_flags);
+}
+
+bool CodeGenerator::collectDebugMapEntries(const std::vector<Instruction>& instructions,
+                                           const std::vector<std::string>& source_lines,
+                                           std::vector<std::pair<std::uint16_t, std::string>>& out_entries,
+                                           std::string* error_out) const {
+    out_entries.clear();
+    std::uint16_t addr = 0x200;
+    for (const auto& instr : instructions) {
+        if (instr.mnemonic == "LABEL" || instr.mnemonic == "END") {
+            continue;
+        }
+        std::uint16_t opc = 0;
+        if (!encodeInstruction(instr, opc)) {
+            if (error_out) {
+                *error_out = "collectDebugMapEntries: failed to encode: " + instr.toString();
+            }
+            return false;
+        }
+        out_entries.emplace_back(addr, debugMapTextForInstruction(instr, source_lines));
+        addr += 2;
+    }
+    return true;
+}
+
 void CodeGenerator::setError(const std::string& message) {
     last_error_ = message;
 }
@@ -1023,8 +1162,11 @@ void CodeGenerator::collectLabels(const std::vector<Instruction>& instructions) 
             
             // Define the label - will throw if duplicate
             symbol_table_.define("label", label_name, current_address);
+        } else if (instr.mnemonic == "END") {
+            // Marker only; matches assembleToBytes (no ROM bytes emitted)
+            continue;
         } else {
-            // All other instructions are 2 bytes in CHIP-8
+            // All emitted instructions are 2 bytes in CHIP-8
             current_address += 2;
         }
     }

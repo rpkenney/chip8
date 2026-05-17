@@ -1,7 +1,7 @@
 #pragma once
 
-#include "lexer.h"
-#include "ast.h"
+#include <chip8/compiler/lexer.h>
+#include <chip8/compiler/ast.h>
 #include <memory>
 #include <string>
 

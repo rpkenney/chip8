@@ -1,12 +1,14 @@
 #pragma once
 
-#include "ast.h"
-#include "register_allocator.h"
-#include "opcode_mapper.h"
-#include <string>
-#include <vector>
-#include <map>
+#include <chip8/compiler/ast.h>
+#include <chip8/compiler/register_allocator.h>
+#include <chip8/compiler/opcode_mapper.h>
 #include <cstdint>
+#include <iosfwd>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 // Intermediate representation: a single CHIP-8 instruction
 struct Instruction {
@@ -78,6 +80,21 @@ public:
     bool assembleToBytes(const std::vector<Instruction>& instructions,
                          std::vector<uint8_t>& out_bytes);
 
+    /// Human-readable listing: address, opcode bytes, assembly IR, optional source line.
+    /// `source_lines` is 0-indexed by file line (`instr.source_line` is 1-based).
+    void writeListing(const std::vector<Instruction>& instructions,
+                      const std::vector<std::string>& source_lines,
+                      std::ostream& out) const;
+
+    /// PC → source text for each emitted 2-byte opcode (trimmed .c8 line, same as listing).
+    /// `source_lines` is 0-indexed by file line (`instr.source_line` is 1-based).
+    /// LABEL/END omitted; sprite ROM bytes are not mapped. Fails if any insn does not encode.
+    /// If a line is missing or blank after trim, falls back to the IR (`Instruction::toString()`).
+    bool collectDebugMapEntries(const std::vector<Instruction>& instructions,
+                                const std::vector<std::string>& source_lines,
+                                std::vector<std::pair<std::uint16_t, std::string>>& out_entries,
+                                std::string* error_out = nullptr) const;
+
     // Get the symbol table (useful for debugging/listing)
     const SymbolTable& getSymbolTable() const { return symbol_table_; }
 
@@ -91,7 +108,8 @@ private:
     RegisterAllocator reg_allocator_;  // For managing temporaries and user variables
     OpCodeMapper op_mapper_;           // For mapping operations to mnemonics
     std::string last_error_;
-    uint16_t current_pc_;  // Current program counter during assembly
+    uint16_t current_pc_;        // Current program counter during assembly
+    int current_source_line_{0}; // Statement/source line for emitted instructions (listing)
     
     // Loop context for break/continue
     struct LoopContext {

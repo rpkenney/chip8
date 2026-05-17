@@ -1,7 +1,7 @@
 #ifndef CHIP8_FRAMEBUFFER_H
 #define CHIP8_FRAMEBUFFER_H
 
-#include "display.h"
+#include <chip8/machine/display.h>
 
 #include <array>
 #include <cstddef>

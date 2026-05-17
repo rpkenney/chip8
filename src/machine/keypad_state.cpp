@@ -1,4 +1,4 @@
-#include "keypad_state.h"
+#include <chip8/machine/keypad_state.h>
 
 void Chip8KeypadState::setKey(int key, bool down) {
     if (key >= 0 && key <= 0xF) {

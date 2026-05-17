@@ -1,4 +1,4 @@
-#include "disassemble_chip8.h"
+#include <chip8/debug/disassemble_chip8.h>
 
 #include <cstdarg>
 #include <cstdio>

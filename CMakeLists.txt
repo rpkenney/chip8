@@ -27,6 +27,8 @@ FetchContent_MakeAvailable(imgui)
 set(CURSES_NEED_WIDE TRUE)
 find_package(Curses QUIET)
 
+add_subdirectory(lib/chip8_debug_map)
+
 # Main executable and every translation unit that links into it.
 add_executable(chip8
     src/main.cpp
@@ -62,15 +64,11 @@ add_executable(chip8
     ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
-# Per-module include roots (do not add src/ itself: a src/debug dir would shadow
-# libstdc++ headers such as <debug/safe_iterator.h> when -I src is used).
+# Per-module include roots: single tree under include/ (chip8/, glad/, KHR/).
+# Do not add src/ itself: a src/debug dir would shadow libstdc++ headers such as
+# <debug/safe_iterator.h> when -I src is used.
 target_include_directories(chip8 PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/machine
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/frontends/glfw
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/frontends/tui
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/app
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/debug
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
 )
@@ -94,6 +92,8 @@ else()
     message(WARNING "Wide ncurses not found (e.g. libncursesw5-dev). "
                     "Windowed `chip8` still builds; `chip8 --tui` will fail until ncurses is available.")
 endif()
+
+target_link_libraries(chip8 PRIVATE chip8_debug_map)
 
 # Include tools subdirectory if enabled
 if(ENABLE_TOOLS)

@@ -1,18 +1,18 @@
-#include "tui_input.h"
+#include <chip8/frontends/tui/tui_input.h>
 
 #include <algorithm>
 #include <cctype>
 #include <vector>
 
-#include "cpu.h"
-#include "debugger.h"
-#include "keypad_state.h"
-#include "memory.h"
-#include "runner.h"
+#include <chip8/machine/cpu.h>
+#include <chip8/debug/debugger.h>
+#include <chip8/machine/keypad_state.h>
+#include <chip8/machine/memory.h>
+#include <chip8/app/runner.h>
 
-#include "tui_commands.h"
-#include "tui_constants.h"
-#include "tui_support.h"
+#include <chip8/frontends/tui/tui_commands.h>
+#include <chip8/frontends/tui/tui_constants.h>
+#include <chip8/frontends/tui/tui_support.h>
 
 namespace chip8_tui {
 
@@ -47,14 +47,16 @@ void gatherWgetch(std::vector<int>& pending) {
 
 bool handlePausedKey(int ch, std::string& cmd_line, std::vector<std::string>& log, bool& quit,
                      TuiPagerState& pager, int log_view_rows, Chip8Debugger& debugger,
-                     Chip8CPU& cpu, Chip8Memory& memory) {
+                     Chip8CPU& cpu, Chip8Memory& memory,
+                     const chip8::debug_map::DebugMap* debug_map) {
     if (ch == '\r' || ch == '\n' || ch == KEY_ENTER) {
         const std::string t = trimCopy(cmd_line);
         if (t.empty()) {
             pager.active = false;
             debugger.requestResume();
         } else {
-            dispatchTuiCommand(t, log, quit, pager, log_view_rows, debugger, cpu, memory);
+            dispatchTuiCommand(t, log, quit, pager, log_view_rows, debugger, cpu, memory,
+                               debug_map);
         }
         cmd_line.clear();
         return true;

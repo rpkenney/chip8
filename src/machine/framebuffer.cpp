@@ -1,4 +1,4 @@
-#include "framebuffer.h"
+#include <chip8/machine/framebuffer.h>
 
 #include <cstring>
 

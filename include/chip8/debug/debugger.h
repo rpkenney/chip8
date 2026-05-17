@@ -1,7 +1,7 @@
 #ifndef CHIP8_DEBUGGER_H
 #define CHIP8_DEBUGGER_H
 
-#include "debug_frame.h"
+#include <chip8/debug/debug_frame.h>
 
 #include <chrono>
 #include <cstdint>
@@ -10,6 +10,10 @@
 
 class Chip8CPU;
 class Chip8Memory;
+
+namespace chip8::debug_map {
+class DebugMap;
+}
 
 /// Owns debug state and pacing: pause/resume, single-step, step-over, breakpoints.
 /// Frontends call `requestPause` / `requestResume` / `requestStep` /
@@ -43,7 +47,10 @@ public:
     void requestStepOver();
 
     /// Self-contained snapshot frontends use to render any debug UI.
-    Chip8DebugFrame captureFrame(const Chip8CPU& cpu, const Chip8Memory& mem) const;
+    /// When `debug_map` is non-null, fills `Chip8DebugFrame::debug_map_line` from an
+    /// exact PC match (the instruction about to execute).
+    Chip8DebugFrame captureFrame(const Chip8CPU& cpu, const Chip8Memory& mem,
+                                 const chip8::debug_map::DebugMap* debug_map = nullptr) const;
     PausePacing pacing() const {
         return auto_pacing ? PausePacing::Auto : PausePacing::Paused;
     }

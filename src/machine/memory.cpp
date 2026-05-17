@@ -1,4 +1,4 @@
-#include "memory.h"
+#include <chip8/machine/memory.h>
 
 #include <cstring>
 #include <stdexcept>

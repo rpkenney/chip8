@@ -12,8 +12,10 @@ add_executable(chip8c
 )
 
 target_include_directories(chip8c PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
+    ${CMAKE_SOURCE_DIR}/include
 )
+
+target_link_libraries(chip8c PRIVATE chip8_debug_map)
 
 # Test executables
 add_executable(test_register_allocator
@@ -22,7 +24,7 @@ add_executable(test_register_allocator
 )
 
 target_include_directories(test_register_allocator PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 add_executable(test_opcode_mapper
@@ -31,7 +33,7 @@ add_executable(test_opcode_mapper
 )
 
 target_include_directories(test_opcode_mapper PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 add_executable(test_symbol_table
@@ -43,7 +45,7 @@ add_executable(test_symbol_table
 )
 
 target_include_directories(test_symbol_table PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 add_executable(test_label_generator
@@ -55,7 +57,7 @@ add_executable(test_label_generator
 )
 
 target_include_directories(test_label_generator PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/compiler/include
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 add_executable(chip8d
@@ -63,5 +65,5 @@ add_executable(chip8d
 )
 
 target_include_directories(chip8d PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/decompiler/include
+    ${CMAKE_SOURCE_DIR}/include
 )

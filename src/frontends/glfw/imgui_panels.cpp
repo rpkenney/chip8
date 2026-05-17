@@ -1,10 +1,10 @@
-#include "imgui_panels.h"
+#include <chip8/frontends/glfw/imgui_panels.h>
 
-#include "cpu.h"
-#include "debug_frame.h"
-#include "debugger.h"
-#include "disassemble_chip8.h"
-#include "memory.h"
+#include <chip8/machine/cpu.h>
+#include <chip8/debug/debug_frame.h>
+#include <chip8/debug/debugger.h>
+#include <chip8/debug/disassemble_chip8.h>
+#include <chip8/machine/memory.h>
 
 #include <imgui.h>
 
@@ -70,6 +70,12 @@ void renderRegisters(const Chip8DebugFrame& frame, Chip8CPU& cpu) {
     }
 
     ImGui::Separator();
+    if (!frame.debug_map_line.empty()) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+        ImGui::TextWrapped("%s", frame.debug_map_line.c_str());
+        ImGui::PopStyleColor();
+    }
+    ImGui::Separator();
     ImGui::Text("Instruction: 0x%04X  %s", frame.opcode, frame.mnemonic.c_str());
     ImGui::TextWrapped("%s", frame.description.c_str());
     ImGui::Separator();
@@ -105,6 +111,12 @@ void renderRecentInstructions(const Chip8DebugFrame& frame) {
 void renderHexdump(const Chip8DebugFrame& frame, const Chip8Memory& memory) {
     static bool center_pc = true;
     ImGui::Checkbox("Center PC", &center_pc);
+
+    if (!frame.debug_map_line.empty()) {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+        ImGui::TextWrapped("%s", frame.debug_map_line.c_str());
+        ImGui::PopStyleColor();
+    }
 
     ImGui::Text("PC = 0x%04X   %04X  %s", frame.cpu.pc, frame.opcode,
                 frame.mnemonic.c_str());
@@ -213,8 +225,9 @@ void renderExecution(Chip8Debugger& debugger) {
 
 }  // namespace
 
-CentralRect build(Chip8Debugger& debugger, Chip8CPU& cpu, const Chip8Memory& memory) {
-    const Chip8DebugFrame frame = debugger.captureFrame(cpu, memory);
+CentralRect build(Chip8Debugger& debugger, Chip8CPU& cpu, const Chip8Memory& memory,
+                  const chip8::debug_map::DebugMap* debug_map) {
+    const Chip8DebugFrame frame = debugger.captureFrame(cpu, memory, debug_map);
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);

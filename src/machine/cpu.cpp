@@ -1,7 +1,7 @@
-#include "cpu.h"
-#include "display.h"
-#include "keypad.h"
-#include "memory.h"
+#include <chip8/machine/cpu.h>
+#include <chip8/machine/display.h>
+#include <chip8/machine/keypad.h>
+#include <chip8/machine/memory.h>
 
 #include <cstdio>
 #include <cstring>

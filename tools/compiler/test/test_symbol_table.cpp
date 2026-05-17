@@ -1,6 +1,7 @@
-#include "codegen.h"
-#include <iostream>
+#include <chip8/compiler/codegen.h>
 #include <cassert>
+#include <iostream>
+#include <string>
 
 int main() {
     std::cout << "=== Testing SymbolTable ===" << std::endl << std::endl;
@@ -16,9 +17,14 @@ int main() {
     assert(table.resolve("EXIT_1", addr) && addr == 0x210);
     std::cout << "  ✓ Labels defined and resolved correctly" << std::endl << std::endl;
 
-    // Test 2: Duplicate detection
+    // Test 2: Duplicate detection (define() throws; no silent false)
     std::cout << "Test 2: Duplicate detection" << std::endl;
-    assert(!table.define("label", "LOOP_1", 0x220));  // Should fail (duplicate)
+    try {
+        table.define("label", "LOOP_1", 0x220);
+        assert(false && "duplicate label define should throw");
+    } catch (const std::runtime_error& e) {
+        assert(std::string(e.what()).find("Duplicate label") != std::string::npos);
+    }
     std::cout << "  ✓ Duplicate label rejected" << std::endl << std::endl;
 
     // Test 3: Define and resolve functions

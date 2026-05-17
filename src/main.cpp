@@ -1,6 +1,6 @@
-#include "emulator.h"
-#include "glfw_frontend.h"
-#include "tui_frontend.h"
+#include <chip8/app/emulator.h>
+#include <chip8/frontends/glfw/glfw_frontend.h>
+#include <chip8/frontends/tui/tui_frontend.h>
 
 #include <cstdio>
 #include <cstring>

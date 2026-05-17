@@ -1,7 +1,7 @@
 #ifndef CHIP8_DEBUG_FRAME_H
 #define CHIP8_DEBUG_FRAME_H
 
-#include "cpu.h"
+#include <chip8/machine/cpu.h>
 
 #include <cstdint>
 #include <string>
@@ -28,6 +28,8 @@ struct Chip8DebugFrame {
     std::string mnemonic;
     /// Plain-English description of what the opcode does.
     std::string description;
+    /// Text from embedded ROM debug map at `cpu.pc` (e.g. trimmed .c8 source line).
+    std::string debug_map_line;
     /// Up to `Chip8Debugger::INSTRUCTION_HISTORY_CAPACITY` entries, oldest first.
     std::vector<Chip8InstructionHistoryEntry> instruction_history;
     /// First address covered by `memory_window`; aligned to an even byte.

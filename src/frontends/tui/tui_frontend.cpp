@@ -1,12 +1,13 @@
-#include "tui_frontend.h"
+#include <chip8/frontends/tui/tui_frontend.h>
 
-#include "cpu.h"
-#include "debugger.h"
-#include "emulator.h"
-#include "framebuffer.h"
-#include "keypad_state.h"
-#include "memory.h"
-#include "runner.h"
+#include <chip8/machine/cpu.h>
+#include <chip8/debug/debugger.h>
+#include <chip8/app/emulator.h>
+#include <chip8/debug_map/debug_map.h>
+#include <chip8/machine/framebuffer.h>
+#include <chip8/machine/keypad_state.h>
+#include <chip8/machine/memory.h>
+#include <chip8/app/runner.h>
 
 #if CHIP8_HAVE_NCURSES
 #include <curses.h>
@@ -18,11 +19,11 @@
 #include <string>
 #include <vector>
 
-#include "tui_constants.h"
-#include "tui_draw.h"
-#include "tui_input.h"
-#include "tui_support.h"
-#include "tui_windows.h"
+#include <chip8/frontends/tui/tui_constants.h>
+#include <chip8/frontends/tui/tui_draw.h>
+#include <chip8/frontends/tui/tui_input.h>
+#include <chip8/frontends/tui/tui_support.h>
+#include <chip8/frontends/tui/tui_windows.h>
 #endif
 
 namespace tui_frontend {
@@ -112,8 +113,11 @@ int run(Chip8Emulator& emulator) {
                     }
                     continue;
                 }
+                const auto& dm_opt = emulator.debugMap();
+                const chip8::debug_map::DebugMap* const dm_ptr =
+                    dm_opt.has_value() ? &*dm_opt : nullptr;
                 if (handlePausedKey(ch, cmd_line, log_lines, quit, pager, log_h, debugger, cpu,
-                                    memory)) {
+                                    memory, dm_ptr)) {
                     skip_chip8[i] = true;
                 }
             }
@@ -180,7 +184,10 @@ int run(Chip8Emulator& emulator) {
             frame.paused = paused;
             frame.log_pager_active = pager.active;
             frame.blink_on = blink_on;
-            drawAllPanels(frame, fb, debugger, cpu, memory, log_lines, cmd_line, pager);
+            const auto& dm_opt = emulator.debugMap();
+            const chip8::debug_map::DebugMap* const dm_ptr =
+                dm_opt.has_value() ? &*dm_opt : nullptr;
+            drawAllPanels(frame, fb, debugger, cpu, memory, log_lines, cmd_line, pager, dm_ptr);
 
             if (resized_ok) {
                 wnoutrefresh(stdscr);

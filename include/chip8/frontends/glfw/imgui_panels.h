@@ -5,6 +5,10 @@ class Chip8CPU;
 class Chip8Debugger;
 class Chip8Memory;
 
+namespace chip8::debug_map {
+class DebugMap;
+}
+
 namespace imgui_panels {
 
 /// Rect of the dockspace's central node, in ImGui's display-coordinate space
@@ -24,7 +28,8 @@ struct CentralRect {
 /// of the CHIP-8 framebuffer to it.
 CentralRect build(Chip8Debugger& debugger,
                   Chip8CPU& cpu,
-                  const Chip8Memory& memory);
+                  const Chip8Memory& memory,
+                  const chip8::debug_map::DebugMap* debug_map = nullptr);
 
 }  // namespace imgui_panels
 

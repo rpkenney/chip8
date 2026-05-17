@@ -1,8 +1,8 @@
-#include "tui_windows.h"
+#include <chip8/frontends/tui/tui_windows.h>
 
-#include "runner.h"
+#include <chip8/app/runner.h>
 
-#include "tui_constants.h"
+#include <chip8/frontends/tui/tui_constants.h>
 
 namespace chip8_tui {
 

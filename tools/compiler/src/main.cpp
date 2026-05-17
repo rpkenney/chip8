@@ -1,11 +1,14 @@
-#include "lexer.h"
-#include "parser.h"
-#include "codegen.h"
-#include <iostream>
+#include <chip8/compiler/lexer.h>
+#include <chip8/compiler/parser.h>
+#include <chip8/compiler/codegen.h>
+#include <chip8/debug_map/debug_map.h>
+
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <set>
+#include <vector>
 
 std::string readFile(const std::string& filename) {
     std::ifstream file(filename);
@@ -29,7 +32,9 @@ void writeFile(const std::string& filename, const std::vector<uint8_t>& data) {
 }
 
 void printUsage(const char* prog) {
-    std::cerr << "Usage: " << prog << " <source.c8> [-o out.bin] [--verbose PHASES]" << std::endl;
+    std::cerr << "Usage: " << prog << " <source.c8> [-o out.bin] [-l out.lst] [--embed-debug-map] [--verbose PHASES]" << std::endl;
+    std::cerr << "  --embed-debug-map  Append PC→source debug blob + C8DB footer (see chip8::debug_map)."
+              << std::endl;
     std::cerr << "  PHASES: comma-separated list of phase numbers to show output for" << std::endl;
     std::cerr << "  Available phases: 1 (lex), 2 (parse), 3 (codegen-pass1), 4 (codegen-pass2)" << std::endl;
     std::cerr << "  Examples: --verbose 1,2,3 or --verbose all" << std::endl;
@@ -43,13 +48,19 @@ int main(int argc, char* argv[]) {
 
     std::string source_file = argv[1];
     std::string output_file = "out.bin";
+    std::string listing_file;
     std::set<int> verbose_phases;
+    bool embed_debug_map = false;
 
     // Parse command-line options
     for (int i = 2; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "-o" && i + 1 < argc) {
             output_file = argv[++i];
+        } else if (arg == "-l" && i + 1 < argc) {
+            listing_file = argv[++i];
+        } else if (arg == "--embed-debug-map") {
+            embed_debug_map = true;
         }
         else if (arg == "--verbose" && i + 1 < argc) {
             std::string phases_str = argv[++i];
@@ -74,6 +85,14 @@ int main(int argc, char* argv[]) {
     }
 
     std::string source = readFile(source_file);
+    std::vector<std::string> source_lines;
+    {
+        std::istringstream src_in(source);
+        std::string line;
+        while (std::getline(src_in, line)) {
+            source_lines.push_back(line);
+        }
+    }
 
     // === PHASE 1: Lexing ===
     if (verbose_phases.count(1)) {
@@ -152,8 +171,39 @@ int main(int argc, char* argv[]) {
         std::cout << "✓ Assembled to " << binary.size() << " bytes" << std::endl << std::endl;
     }
 
-    // Write binary
-    writeFile(output_file, binary);
+    // Write binary (plain ROM or container with debug trailer)
+    if (embed_debug_map) {
+        std::vector<std::pair<std::uint16_t, std::string>> entries;
+        std::string map_err;
+        if (!codegen.collectDebugMapEntries(instructions, source_lines, entries, &map_err)) {
+            std::cerr << "✗ Debug map entries failed: " << map_err << std::endl;
+            return 1;
+        }
+        std::vector<std::uint8_t> container_file;
+        if (!chip8::debug_map::build_container_file(binary, entries, container_file, &map_err)) {
+            std::cerr << "✗ Container build failed: " << map_err << std::endl;
+            return 1;
+        }
+        writeFile(output_file, container_file);
+    } else {
+        writeFile(output_file, binary);
+    }
+
+    // Optional annotated listing (same layout as emitted ROM)
+    if (!listing_file.empty()) {
+        std::ofstream lst(listing_file);
+        if (!lst.is_open()) {
+            std::cerr << "Error: Cannot write listing file '" << listing_file << "'" << std::endl;
+            return 1;
+        }
+        lst << "; chip8c listing for " << source_file << "\n;\n";
+        try {
+            codegen.writeListing(instructions, source_lines, lst);
+        } catch (const std::exception& e) {
+            std::cerr << "✗ Listing failed: " << e.what() << std::endl;
+            return 1;
+        }
+    }
 
     // Always print compilation summary
     // Calculate sizes based on emitted instructions (each real instruction = 2 bytes)
@@ -169,7 +219,14 @@ int main(int argc, char* argv[]) {
     std::cout << "=== Compilation Summary ===" << std::endl;
     std::cout << "Status: ✓ SUCCESS" << std::endl;
     std::cout << "Source file: " << source_file << std::endl;
-    std::cout << "Output file: " << output_file << std::endl;
+    std::cout << "Output file: " << output_file;
+    if (embed_debug_map) {
+        std::cout << " (ROM + embedded PC→text map)";
+    }
+    std::cout << std::endl;
+    if (!listing_file.empty()) {
+        std::cout << "Listing file: " << listing_file << std::endl;
+    }
     std::cout << "Instructions: " << instructions.size() << std::endl;
     std::cout << "Code size: " << code_bytes << " bytes" << std::endl;
     if (sprite_bytes > 0) {

@@ -1,12 +1,12 @@
-#include "tui_renderer.h"
+#include <chip8/frontends/tui/tui_renderer.h>
 
 #include <curses.h>
 #include <chrono>
 
-#include "cpu.h"
-#include "debugger.h"
-#include "framebuffer.h"
-#include "memory.h"
+#include <chip8/machine/cpu.h>
+#include <chip8/debug/debugger.h>
+#include <chip8/machine/framebuffer.h>
+#include <chip8/machine/memory.h>
 
 namespace chip8_tui {
 
@@ -39,7 +39,7 @@ void TuiRenderer::renderFrame(const TuiState& state, const Chip8FrameBuffer& fb,
     frame.blink_on = blink_on;
 
     drawAllPanels(frame, fb, dbg, cpu, mem, state.log_lines, state.cmd_line,
-                  const_cast<TuiPagerState&>(state.pager));
+                  const_cast<TuiPagerState&>(state.pager), nullptr);
 }
 
 void TuiRenderer::flushToTerminal() const {

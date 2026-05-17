@@ -1,4 +1,4 @@
-#include "register_allocator.h"
+#include <chip8/compiler/register_allocator.h>
 #include <iostream>
 #include <cassert>
 

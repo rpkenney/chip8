@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include <chip8/compiler/lexer.h>
 #include <cctype>
 #include <unordered_map>
 

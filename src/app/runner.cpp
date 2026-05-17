@@ -1,8 +1,8 @@
-#include "runner.h"
+#include <chip8/app/runner.h>
 
-#include "cpu.h"
-#include "debugger.h"
-#include "memory.h"
+#include <chip8/machine/cpu.h>
+#include <chip8/debug/debugger.h>
+#include <chip8/machine/memory.h>
 
 Chip8Runner::Chip8Runner(Chip8CPU& cpu, Chip8Memory& memory, Chip8Debugger& debugger)
     : cpu(cpu), memory(memory), debugger(debugger),

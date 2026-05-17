@@ -1,4 +1,4 @@
-#include "parser.h"
+#include <chip8/compiler/parser.h>
 #include <iostream>
 #include <stdexcept>
 
@@ -149,19 +149,34 @@ std::shared_ptr<FunctionDef> Parser::parseFunctionDef() {
 
 std::shared_ptr<Statement> Parser::parseStatement() {
     if (match(TokenType::IF)) {
-        return parseIfStatement();
+        int line = previous().line;
+        auto s = parseIfStatement();
+        s->line = line;
+        return s;
     }
     if (match(TokenType::WHILE)) {
-        return parseWhileStatement();
+        int line = previous().line;
+        auto s = parseWhileStatement();
+        s->line = line;
+        return s;
     }
     if (match(TokenType::RETURN)) {
-        return parseReturnStatement();
+        int line = previous().line;
+        auto s = parseReturnStatement();
+        s->line = line;
+        return s;
     }
     if (match(TokenType::BREAK)) {
-        return parseBreakStatement();
+        int line = previous().line;
+        auto s = parseBreakStatement();
+        s->line = line;
+        return s;
     }
     if (match(TokenType::CONTINUE)) {
-        return parseContinueStatement();
+        int line = previous().line;
+        auto s = parseContinueStatement();
+        s->line = line;
+        return s;
     }
 
     return parseExpressionStatement();
@@ -215,6 +230,7 @@ std::shared_ptr<Statement> Parser::parseContinueStatement() {
 }
 
 std::shared_ptr<Statement> Parser::parseExpressionStatement() {
+    int line = peek().line;
     auto expr = parseExpression();
 
     if (match(TokenType::ASSIGN)) {
@@ -222,14 +238,18 @@ std::shared_ptr<Statement> Parser::parseExpressionStatement() {
         if (auto ident = std::dynamic_pointer_cast<Identifier>(expr)) {
             auto value = parseExpression();
             consume(TokenType::SEMICOLON, "Expected ';' after assignment");
-            return std::make_shared<Assignment>(ident->name, value);
+            auto a = std::make_shared<Assignment>(ident->name, value);
+            a->line = line;
+            return a;
         } else {
             throw std::runtime_error("Invalid assignment target");
         }
     }
 
     consume(TokenType::SEMICOLON, "Expected ';' after expression statement");
-    return std::make_shared<ExpressionStatement>(expr);
+    auto es = std::make_shared<ExpressionStatement>(expr);
+    es->line = line;
+    return es;
 }
 
 std::vector<std::shared_ptr<Statement>> Parser::parseBlock() {

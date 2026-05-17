@@ -1,4 +1,4 @@
-#include "ast.h"
+#include <chip8/compiler/ast.h>
 #include <sstream>
 
 static std::string indent_str(int indent) {

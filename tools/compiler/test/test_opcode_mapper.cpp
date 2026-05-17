@@ -1,4 +1,4 @@
-#include "opcode_mapper.h"
+#include <chip8/compiler/opcode_mapper.h>
 #include <iostream>
 #include <cassert>
 

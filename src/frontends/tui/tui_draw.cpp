@@ -1,20 +1,21 @@
-#include "tui_draw.h"
+#include <chip8/frontends/tui/tui_draw.h>
 
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <string>
 
-#include "debug_frame.h"
-#include "debugger.h"
+#include <chip8/debug/debug_frame.h>
+#include <chip8/debug/debugger.h>
 
-#include "tui_constants.h"
+#include <chip8/frontends/tui/tui_constants.h>
 
 namespace chip8_tui {
 
 void drawAllPanels(const TuiFrame& frame, const Chip8FrameBuffer& fb,
                    const Chip8Debugger& dbg, const Chip8CPU& cpu, const Chip8Memory& mem,
                    const std::vector<std::string>& log_lines, const std::string& cmd_line,
-                   TuiPagerState& pager) {
+                   TuiPagerState& pager, const chip8::debug_map::DebugMap* debug_map) {
     const bool colors = hasColors();
 
     // Render game framebuffer
@@ -65,7 +66,7 @@ void drawAllPanels(const TuiFrame& frame, const Chip8FrameBuffer& fb,
         werase(w);
         int cols = getmaxx(w);
         if (cols < 1) cols = 1;
-        const Chip8DebugFrame debug_frame = dbg.captureFrame(cpu, mem);
+        const Chip8DebugFrame debug_frame = dbg.captureFrame(cpu, mem, debug_map);
         char mn[28] = {};
         std::strncpy(mn, debug_frame.mnemonic.c_str(), sizeof(mn) - 1);
         char line[320];
@@ -79,6 +80,14 @@ void drawAllPanels(const TuiFrame& frame, const Chip8FrameBuffer& fb,
             line[static_cast<std::size_t>(clip)] = '\0';
         }
         mvwprintw(w, 0, 0, "%s", line);
+        const int stat_rows = getmaxy(w);
+        if (stat_rows >= 2 && !debug_frame.debug_map_line.empty()) {
+            std::string src = debug_frame.debug_map_line;
+            if (static_cast<int>(src.size()) > cols) {
+                src.resize(static_cast<std::size_t>(cols));
+            }
+            mvwprintw(w, 1, 0, "%s", src.c_str());
+        }
     }
 
     // Render log

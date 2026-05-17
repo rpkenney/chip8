@@ -1,4 +1,4 @@
-#include "tui_support.h"
+#include <chip8/frontends/tui/tui_support.h>
 
 #include <algorithm>
 #include <cctype>

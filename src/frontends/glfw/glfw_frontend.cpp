@@ -1,15 +1,16 @@
-#include "glfw_frontend.h"
+#include <chip8/frontends/glfw/glfw_frontend.h>
 
-#include "cpu.h"
-#include "debug_frame.h"
-#include "debugger.h"
-#include "emulator.h"
-#include "framebuffer.h"
-#include "imgui_panels.h"
-#include "keypad_state.h"
-#include "memory.h"
-#include "runner.h"
-#include "shaders.h"
+#include <chip8/machine/cpu.h>
+#include <chip8/debug/debug_frame.h>
+#include <chip8/debug/debugger.h>
+#include <chip8/app/emulator.h>
+#include <chip8/debug_map/debug_map.h>
+#include <chip8/machine/framebuffer.h>
+#include <chip8/frontends/glfw/imgui_panels.h>
+#include <chip8/machine/keypad_state.h>
+#include <chip8/machine/memory.h>
+#include <chip8/app/runner.h>
+#include <chip8/frontends/glfw/shaders.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -230,6 +231,9 @@ int run(Chip8Emulator& emu) {
     Chip8Debugger& debugger = emu.debugger();
     Chip8Runner& runner = emu.runner();
 
+    const auto& dm_opt = emu.debugMap();
+    const chip8::debug_map::DebugMap* const dm_ptr =
+        dm_opt.has_value() ? &*dm_opt : nullptr;
     GlfwWindow window(1280, 720, "CHIP-8");
     GLFWwindow* const win = window.handle();
 
@@ -284,7 +288,7 @@ int run(Chip8Emulator& emu) {
                 ImGui_ImplGlfw_NewFrame();
                 ImGui::NewFrame();
                 const imgui_panels::CentralRect central =
-                    imgui_panels::build(debugger, cpu, memory);
+                    imgui_panels::build(debugger, cpu, memory, dm_ptr);
                 ImGui::Render();
 
                 // Draw the CHIP-8 quad sized to the dockspace's central node.

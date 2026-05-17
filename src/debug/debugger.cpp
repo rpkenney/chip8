@@ -1,9 +1,10 @@
-#include "debugger.h"
+#include <chip8/debug/debugger.h>
 
-#include "cpu.h"
-#include "disassemble_chip8.h"
-#include "memory.h"
-#include "opcode_descriptions.h"
+#include <chip8/debug_map/debug_map.h>
+#include <chip8/machine/cpu.h>
+#include <chip8/debug/disassemble_chip8.h>
+#include <chip8/machine/memory.h>
+#include <chip8/debug/opcode_descriptions.h>
 
 #include <utility>
 
@@ -49,13 +50,19 @@ void Chip8Debugger::requestPause() {
 }
 
 Chip8DebugFrame Chip8Debugger::captureFrame(const Chip8CPU& cpu,
-                                            const Chip8Memory& mem) const {
+                                            const Chip8Memory& mem,
+                                            const chip8::debug_map::DebugMap* debug_map) const {
     Chip8DebugFrame frame;
     frame.cpu = cpu.snapshot();
     frame.opcode = (frame.cpu.pc + 1 < Chip8Memory::MEMORY_SIZE)
                        ? mem.readWord(frame.cpu.pc) : 0;
     frame.mnemonic = disassembleChip8(frame.opcode);
     frame.description = getOpcodeDescription(frame.opcode);
+    if (debug_map != nullptr) {
+        if (const std::string* line = debug_map->find(frame.cpu.pc)) {
+            frame.debug_map_line = *line;
+        }
+    }
 
     // Window centered on PC (aligned to even), clamped at 0.
     constexpr std::uint16_t kHalf = MEMORY_WINDOW_BYTES / 2;

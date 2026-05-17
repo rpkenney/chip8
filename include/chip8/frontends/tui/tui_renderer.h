@@ -2,9 +2,9 @@
 
 #include <chrono>
 
-#include "tui_draw.h"
-#include "tui_state.h"
-#include "tui_windows.h"
+#include <chip8/frontends/tui/tui_draw.h>
+#include <chip8/frontends/tui/tui_state.h>
+#include <chip8/frontends/tui/tui_windows.h>
 
 class Chip8CPU;
 class Chip8Debugger;

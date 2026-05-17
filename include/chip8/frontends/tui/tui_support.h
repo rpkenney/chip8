@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "tui_constants.h"
+#include <chip8/frontends/tui/tui_constants.h>
 
 namespace chip8_tui {
 

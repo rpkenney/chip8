@@ -1,23 +1,24 @@
-#include "tui_commands.h"
+#include <chip8/frontends/tui/tui_commands.h>
 
 #include <algorithm>
 #include <cstdio>
 #include <sstream>
 #include <string>
 
-#include "cpu.h"
-#include "debug_frame.h"
-#include "debugger.h"
-#include "disassemble_chip8.h"
-#include "memory.h"
+#include <chip8/machine/cpu.h>
+#include <chip8/debug/debug_frame.h>
+#include <chip8/debug/debugger.h>
+#include <chip8/debug/disassemble_chip8.h>
+#include <chip8/machine/memory.h>
 
-#include "tui_support.h"
+#include <chip8/frontends/tui/tui_support.h>
 
 namespace chip8_tui {
 
 void dispatchTuiCommand(const std::string& line, std::vector<std::string>& log, bool& quit,
                         TuiPagerState& pager, int log_view_rows, Chip8Debugger& debugger,
-                        Chip8CPU& cpu, Chip8Memory& memory) {
+                        Chip8CPU& cpu, Chip8Memory& memory,
+                        const chip8::debug_map::DebugMap* debug_map) {
     const std::string t = trimCopy(line);
     if (t.empty()) {
         return;
@@ -91,7 +92,7 @@ void dispatchTuiCommand(const std::string& line, std::vector<std::string>& log, 
         return;
     }
     if (cmd == "regs") {
-        const Chip8DebugFrame frame = debugger.captureFrame(cpu, memory);
+        const Chip8DebugFrame frame = debugger.captureFrame(cpu, memory, debug_map);
         char buf[96];
         for (int i = 0; i < 16; ++i) {
             std::snprintf(buf, sizeof(buf), "V%X = %02X", i,
@@ -104,12 +105,15 @@ void dispatchTuiCommand(const std::string& line, std::vector<std::string>& log, 
         appendLogLine(log, buf);
         std::snprintf(buf, sizeof(buf), "next: %04X  %s", frame.opcode, frame.mnemonic.c_str());
         appendLogLine(log, buf);
+        if (!frame.debug_map_line.empty()) {
+            appendLogLine(log, frame.debug_map_line);
+        }
         return;
     }
     if (cmd == "hist") {
         std::string ntok;
         iss >> ntok;
-        const Chip8DebugFrame frame = debugger.captureFrame(cpu, memory);
+        const Chip8DebugFrame frame = debugger.captureFrame(cpu, memory, debug_map);
         int n = 20;
         if (!ntok.empty()) {
             try {

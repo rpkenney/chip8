@@ -1,4 +1,4 @@
-#include "breakpoints_loader.h"
+#include <chip8/debug/breakpoints_loader.h>
 
 #include <cctype>
 #include <cerrno>

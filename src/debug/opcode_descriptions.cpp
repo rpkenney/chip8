@@ -1,4 +1,4 @@
-#include "opcode_descriptions.h"
+#include <chip8/debug/opcode_descriptions.h>
 
 #include <cstdint>
 #include <string>
